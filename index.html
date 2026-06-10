@@ -493,6 +493,86 @@
       background:rgba(255,255,255,.05);
     }
 
+
+    .displayControls{
+      position:fixed;
+      top:14px;
+      right:14px;
+      z-index:50;
+      display:flex;
+      gap:8px;
+      padding:8px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(3,9,20,.72);
+      box-shadow:0 14px 40px rgba(0,0,0,.32);
+      backdrop-filter:blur(18px);
+      -webkit-backdrop-filter:blur(18px);
+    }
+
+    .displayBtn{
+      appearance:none;
+      border:1px solid rgba(255,255,255,.13);
+      background:rgba(255,255,255,.07);
+      color:rgba(255,255,255,.88);
+      border-radius:999px;
+      min-height:36px;
+      padding:0 12px;
+      font:inherit;
+      font-size:13px;
+      font-weight:850;
+      cursor:pointer;
+      white-space:nowrap;
+    }
+
+    .displayBtn:hover{background:rgba(255,255,255,.12)}
+    .displayBtn.active{
+      color:#ffffff;
+      background:rgba(59,130,246,.28);
+      border-color:rgba(96,165,250,.44);
+      box-shadow:0 0 20px rgba(59,130,246,.18);
+    }
+
+    body.fitScreen{
+      overflow:hidden;
+      height:100svh;
+    }
+
+    body.fitScreen .page{
+      transform:scale(var(--fit-scale, 1));
+      transform-origin:top center;
+      width:min(calc(100% / var(--fit-scale, 1)), calc(var(--page-max) / var(--fit-scale, 1)));
+    }
+
+    body.tv.fitScreen .page{
+      width:calc(100% / var(--fit-scale, 1));
+      max-width:none;
+    }
+
+    body.tv .displayControls{
+      opacity:.22;
+      transition:opacity .2s var(--ease);
+    }
+
+    body.tv .displayControls:hover,
+    body.tv .displayControls:focus-within{
+      opacity:1;
+    }
+
+    @media (max-width:680px){
+      .displayControls{
+        left:12px;
+        right:12px;
+        top:auto;
+        bottom:12px;
+        justify-content:center;
+        border-radius:18px;
+      }
+      .displayBtn{flex:1 1 auto}
+      body.fitScreen{overflow:auto; height:auto}
+      body.fitScreen .page{transform:none; width:min(100%, var(--page-max))}
+    }
+
     @media (hover:hover){
       .studioCard:hover{transform:translateY(-2px)}
     }
@@ -546,7 +626,7 @@
     }
 
     @media (max-width:1400px){
-      body.tv{overflow:auto}
+      body.tv:not(.fitScreen){overflow:auto}
       body.tv .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
       body.tv .studioCard{min-height:320px}
     }
@@ -564,7 +644,12 @@
 </head>
 
 <body>
-  <div class="page">
+  <div class="displayControls" aria-label="Режим отображения табло">
+    <button class="displayBtn" id="tvModeBtn" type="button">ТВ-режим</button>
+    <button class="displayBtn" id="fitModeBtn" type="button">Вписать в экран</button>
+  </div>
+
+  <div class="page" id="page">
     <header class="hero">
       <div class="brand">
         <div class="logoBox" id="logoBox">
@@ -637,9 +722,16 @@
     const SOON_LIMIT_MINUTES = 30;
 
     const params = new URLSearchParams(window.location.search);
-    if (params.get("tv") === "1") {
-      document.body.classList.add("tv");
-    }
+    const page = document.getElementById("page");
+    const tvModeBtn = document.getElementById("tvModeBtn");
+    const fitModeBtn = document.getElementById("fitModeBtn");
+
+    const savedTvMode = localStorage.getItem("ipamTvMode") === "1";
+    const savedFitMode = localStorage.getItem("ipamFitMode") === "1";
+    const isTvFromUrl = params.get("tv") === "1";
+
+    if (isTvFromUrl || savedTvMode) document.body.classList.add("tv");
+    if (isTvFromUrl || savedFitMode) document.body.classList.add("fitScreen");
 
     const studiosGrid = document.getElementById("studiosGrid");
     const apiStatus = document.getElementById("apiStatus");
@@ -656,6 +748,76 @@
 
     let secondsToRefresh = Math.floor(REFRESH_MS / 1000);
     let lastData = null;
+    let fitRaf = null;
+
+    function updateModeButtons(){
+      tvModeBtn.classList.toggle("active", document.body.classList.contains("tv"));
+      fitModeBtn.classList.toggle("active", document.body.classList.contains("fitScreen"));
+      tvModeBtn.textContent = document.body.classList.contains("tv") ? "ТВ включён" : "ТВ-режим";
+      fitModeBtn.textContent = document.body.classList.contains("fitScreen") ? "Экран вписан" : "Вписать в экран";
+    }
+
+    function saveModes(){
+      localStorage.setItem("ipamTvMode", document.body.classList.contains("tv") ? "1" : "0");
+      localStorage.setItem("ipamFitMode", document.body.classList.contains("fitScreen") ? "1" : "0");
+    }
+
+    function setUrlTvParam(enabled){
+      const url = new URL(window.location.href);
+      if (enabled) url.searchParams.set("tv", "1");
+      else url.searchParams.delete("tv");
+      window.history.replaceState({}, "", url.toString());
+    }
+
+    function fitToScreen(){
+      if (!document.body.classList.contains("fitScreen")) {
+        document.documentElement.style.setProperty("--fit-scale", "1");
+        return;
+      }
+
+      cancelAnimationFrame(fitRaf);
+      fitRaf = requestAnimationFrame(() => {
+        document.documentElement.style.setProperty("--fit-scale", "1");
+
+        const bodyStyles = getComputedStyle(document.body);
+        const padX = parseFloat(bodyStyles.paddingLeft) + parseFloat(bodyStyles.paddingRight);
+        const padY = parseFloat(bodyStyles.paddingTop) + parseFloat(bodyStyles.paddingBottom);
+        const availableW = Math.max(320, window.innerWidth - padX);
+        const availableH = Math.max(320, window.innerHeight - padY);
+
+        const neededW = Math.max(page.scrollWidth, page.offsetWidth);
+        const neededH = Math.max(page.scrollHeight, page.offsetHeight);
+
+        const scaleW = availableW / neededW;
+        const scaleH = availableH / neededH;
+        const scale = Math.min(1, scaleW, scaleH);
+
+        document.documentElement.style.setProperty("--fit-scale", String(Math.max(0.62, scale - 0.01)));
+      });
+    }
+
+    function setTvMode(enabled){
+      document.body.classList.toggle("tv", enabled);
+      if (enabled) document.body.classList.add("fitScreen");
+      setUrlTvParam(enabled);
+      updateModeButtons();
+      saveModes();
+      setTimeout(fitToScreen, 60);
+    }
+
+    function setFitMode(enabled){
+      document.body.classList.toggle("fitScreen", enabled);
+      updateModeButtons();
+      saveModes();
+      setTimeout(fitToScreen, 60);
+    }
+
+    tvModeBtn.addEventListener("click", () => setTvMode(!document.body.classList.contains("tv")));
+    fitModeBtn.addEventListener("click", () => setFitMode(!document.body.classList.contains("fitScreen")));
+    window.addEventListener("resize", fitToScreen);
+    window.addEventListener("orientationchange", () => setTimeout(fitToScreen, 250));
+    updateModeButtons();
+    fitToScreen();
 
     function escapeHtml(str){
       return String(str ?? "")
@@ -856,6 +1018,7 @@
 
       renderHeadline(studios);
       studiosGrid.innerHTML = sorted.length ? sorted.map(renderStudio).join("") : `<div class="loading">Нет данных по студиям</div>`;
+      setTimeout(fitToScreen, 60);
 
       apiStatus.classList.remove("error");
       apiStatus.querySelector("span:last-child").textContent = "API подключён";
@@ -885,6 +1048,7 @@
 
         if (!lastData) {
           studiosGrid.innerHTML = `<div class="loading">Не удалось загрузить данные. ${escapeHtml(err.message || "")}</div>`;
+          setTimeout(fitToScreen, 60);
         }
       }
     }
@@ -904,6 +1068,7 @@
     loadData();
     setInterval(loadData, REFRESH_MS);
     setInterval(tickRefresh, 1000);
+    setInterval(fitToScreen, 5000);
   </script>
 </body>
 </html>
