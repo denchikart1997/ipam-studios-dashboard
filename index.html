@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Табло студий ИПАМ</title>
+
+  <style>
+    :root{
+      --bg:#030914;
+      --card:rgba(255,255,255,.07);
+      --card2:rgba(255,255,255,.04);
+      --border:rgba(255,255,255,.12);
+      --text:rgba(255,255,255,.94);
+      --muted:rgba(255,255,255,.62);
+      --green:#22c55e;
+      --red:#ef4444;
+      --yellow:#f59e0b;
+      --gray:#94a3b8;
+      --blue:#3b82f6;
+      --shadow:0 18px 50px rgba(0,0,0,.35);
+      --radius:24px;
+    }
+
+    *{box-sizing:border-box}
+
+    html,body{
+      margin:0;
+      min-height:100%;
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(1200px 600px at 50% -200px, rgba(15,42,74,.95), transparent 60%),
+        linear-gradient(180deg, #061225 0%, #030914 100%);
+    }
+
+    body{
+      padding:20px;
+    }
+
+    .page{
+      width:100%;
+      max-width:1280px;
+      margin:0 auto;
+    }
+
+    .hero{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:18px;
+      margin-bottom:22px;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:16px;
+    }
+
+    .logoBox{
+      width:260px;
+      max-width:42vw;
+      padding:10px 16px;
+      border-radius:20px;
+      border:1px solid var(--border);
+      background:linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.04));
+      box-shadow:var(--shadow);
+    }
+
+    .logoBox img{
+      display:block;
+      width:100%;
+      height:auto;
+    }
+
+    .titleBlock h1{
+      margin:0;
+      font-size:clamp(28px,4vw,52px);
+      line-height:1;
+      font-weight:900;
+      letter-spacing:-.03em;
+    }
+
+    .titleBlock p{
+      margin:8px 0 0;
+      color:var(--muted);
+      font-size:16px;
+    }
+
+    .clockBox{
+      text-align:right;
+      padding:14px 18px;
+      border-radius:20px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.06);
+      min-width:180px;
+    }
+
+    .time{
+      font-size:38px;
+      font-weight:900;
+      line-height:1;
+    }
+
+    .date{
+      margin-top:6px;
+      color:var(--muted);
+      font-size:15px;
+    }
+
+    .summary{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:12px;
+      margin-bottom:18px;
+    }
+
+    .summaryCard{
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.055);
+      border-radius:18px;
+      padding:14px;
+      box-shadow:0 10px 28px rgba(0,0,0,.18);
+    }
+
+    .summaryLabel{
+      color:var(--muted);
+      font-size:13px;
+      margin-bottom:4px;
+    }
+
+    .summaryValue{
+      font-size:28px;
+      font-weight:900;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:16px;
+    }
+
+    .studioCard{
+      position:relative;
+      min-height:260px;
+      border-radius:var(--radius);
+      border:1px solid var(--border);
+      background:linear-gradient(180deg, var(--card), var(--card2));
+      box-shadow:var(--shadow);
+      padding:20px;
+      overflow:hidden;
+    }
+
+    .studioCard::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      opacity:.18;
+      pointer-events:none;
+    }
+
+    .studioCard.busy::before{
+      background:radial-gradient(420px 260px at 20% 0%, var(--red), transparent 65%);
+    }
+
+    .studioCard.free::before{
+      background:radial-gradient(420px 260px at 20% 0%, var(--green), transparent 65%);
+    }
+
+    .studioCard.soon::before{
+      background:radial-gradient(420px 260px at 20% 0%, var(--yellow), transparent 65%);
+    }
+
+    .studioCard.nodata::before{
+      background:radial-gradient(420px 260px at 20% 0%, var(--gray), transparent 65%);
+    }
+
+    .cardTop{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      position:relative;
+      z-index:1;
+    }
+
+    .room{
+      font-size:34px;
+      font-weight:900;
+      letter-spacing:-.02em;
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      height:34px;
+      padding:0 12px;
+      border-radius:999px;
+      font-size:13px;
+      font-weight:800;
+      white-space:nowrap;
+      background:rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.12);
+    }
+
+    .dot{
+      width:9px;
+      height:9px;
+      border-radius:50%;
+      background:var(--gray);
+      box-shadow:0 0 12px rgba(255,255,255,.25);
+    }
+
+    .busy .dot{background:var(--red); box-shadow:0 0 16px rgba(239,68,68,.55)}
+    .free .dot{background:var(--green); box-shadow:0 0 16px rgba(34,197,94,.55)}
+    .soon .dot{background:var(--yellow); box-shadow:0 0 16px rgba(245,158,11,.55)}
+
+    .mainStatus{
+      margin-top:24px;
+      position:relative;
+      z-index:1;
+    }
+
+    .statusText{
+      font-size:28px;
+      font-weight:900;
+      line-height:1.05;
+    }
+
+    .message{
+      margin-top:8px;
+      color:var(--muted);
+      font-size:16px;
+      line-height:1.35;
+    }
+
+    .eventBox{
+      position:relative;
+      z-index:1;
+      margin-top:18px;
+      padding:14px;
+      border-radius:16px;
+      background:rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.08);
+    }
+
+    .eventTime{
+      font-size:13px;
+      color:#cfe4ff;
+      font-weight:800;
+      margin-bottom:8px;
+    }
+
+    .eventName{
+      font-size:17px;
+      font-weight:850;
+      line-height:1.25;
+    }
+
+    .teacher,
+    .comment{
+      margin-top:8px;
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.35;
+    }
+
+    .nextBox{
+      position:relative;
+      z-index:1;
+      margin-top:14px;
+      padding-top:14px;
+      border-top:1px solid rgba(255,255,255,.10);
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.45;
+    }
+
+    .nextBox strong{
+      color:rgba(255,255,255,.9);
+    }
+
+    .footer{
+      margin-top:18px;
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    .statusLine{
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    .smallDot{
+      width:8px;
+      height:8px;
+      border-radius:50%;
+      background:var(--green);
+      box-shadow:0 0 12px rgba(34,197,94,.5);
+    }
+
+    .error .smallDot{
+      background:var(--red);
+      box-shadow:0 0 12px rgba(239,68,68,.5);
+    }
+
+    .loading{
+      padding:30px;
+      text-align:center;
+      color:var(--muted);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      background:rgba(255,255,255,.05);
+    }
+
+    @media (max-width:1100px){
+      .grid{grid-template-columns:repeat(2,1fr)}
+      .summary{grid-template-columns:repeat(2,1fr)}
+    }
+
+    @media (max-width:640px){
+      body{padding:12px}
+      .hero{
+        flex-direction:column;
+        align-items:stretch;
+      }
+      .brand{
+        flex-direction:column;
+        align-items:stretch;
+      }
+      .logoBox{
+        width:100%;
+        max-width:none;
+      }
+      .clockBox{
+        text-align:left;
+      }
+      .grid{grid-template-columns:1fr}
+      .summary{grid-template-columns:repeat(2,1fr)}
+      .studioCard{min-height:auto}
+    }
+
+    body.tv{
+      padding:28px;
+    }
+
+    body.tv .page{
+      max-width:1800px;
+    }
+
+    body.tv .grid{
+      grid-template-columns:repeat(4,1fr);
+    }
+
+    body.tv .studioCard{
+      min-height:320px;
+    }
+
+    body.tv .room{
+      font-size:46px;
+    }
+
+    body.tv .statusText{
+      font-size:36px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <header class="hero">
+      <div class="brand">
+        <div class="logoBox">
+          <img src="ipam-logo.png" alt="Первая Академия Медиа">
+        </div>
+
+        <div class="titleBlock">
+          <h1>Табло студий</h1>
+          <p>Занятость аудиторий и студий в реальном времени</p>
+        </div>
+      </div>
+
+      <div class="clockBox">
+        <div class="time" id="clockTime">--:--</div>
+        <div class="date" id="clockDate">--.--.----</div>
+      </div>
+    </header>
+
+    <section class="summary">
+      <div class="summaryCard">
+        <div class="summaryLabel">Свободно</div>
+        <div class="summaryValue" id="freeCount">0</div>
+      </div>
+      <div class="summaryCard">
+        <div class="summaryLabel">Занято</div>
+        <div class="summaryValue" id="busyCount">0</div>
+      </div>
+      <div class="summaryCard">
+        <div class="summaryLabel">Скоро заняты</div>
+        <div class="summaryValue" id="soonCount">0</div>
+      </div>
+      <div class="summaryCard">
+        <div class="summaryLabel">Всего студий</div>
+        <div class="summaryValue" id="totalCount">0</div>
+      </div>
+    </section>
+
+    <main id="studiosGrid" class="grid">
+      <div class="loading">Загружаем табло студий...</div>
+    </main>
+
+    <footer class="footer">
+      <div class="statusLine" id="apiStatus">
+        <span class="smallDot"></span>
+        <span>Подключение к API...</span>
+      </div>
+      <div id="updatedAt">Последнее обновление: —</div>
+    </footer>
+  </div>
+
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbxWe2wpLDw1VBY0tY7N-q28iL275sLONLrVo0qlbV_twDlJhB9NSoPmvZT5vUFs6K-CAA/exec?action=getStudiosStatus";
+    const REFRESH_MS = 30000;
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("tv") === "1") {
+      document.body.classList.add("tv");
+    }
+
+    const studiosGrid = document.getElementById("studiosGrid");
+    const apiStatus = document.getElementById("apiStatus");
+    const updatedAtEl = document.getElementById("updatedAt");
+
+    const freeCountEl = document.getElementById("freeCount");
+    const busyCountEl = document.getElementById("busyCount");
+    const soonCountEl = document.getElementById("soonCount");
+    const totalCountEl = document.getElementById("totalCount");
+
+    function escapeHtml(str){
+      return String(str || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function updateLocalClock(){
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2, "0");
+      const m = String(now.getMinutes()).padStart(2, "0");
+      const d = String(now.getDate()).padStart(2, "0");
+      const mo = String(now.getMonth() + 1).padStart(2, "0");
+      const y = now.getFullYear();
+
+      document.getElementById("clockTime").textContent = `${h}:${m}`;
+      document.getElementById("clockDate").textContent = `${d}.${mo}.${y}`;
+    }
+
+    function eventHtml(item, label){
+      if (!item) return "";
+
+      const teacher = item.teacher ? `<div class="teacher">Преподаватель: ${escapeHtml(item.teacher)}</div>` : "";
+      const comment = item.comment ? `<div class="comment">Комментарий: ${escapeHtml(item.comment)}</div>` : "";
+
+      return `
+        <div class="eventBox">
+          <div class="eventTime">${escapeHtml(label)} · ${escapeHtml(item.start)}–${escapeHtml(item.end)}</div>
+          <div class="eventName">${escapeHtml(item.event || "Занято")}</div>
+          ${teacher}
+          ${comment}
+        </div>
+      `;
+    }
+
+    function nextHtml(next){
+      if (!next) return "";
+
+      return `
+        <div class="nextBox">
+          <strong>Следующее:</strong><br>
+          ${escapeHtml(next.start)}–${escapeHtml(next.end)} · ${escapeHtml(next.event || "Занято")}
+          ${next.teacher ? `<br>${escapeHtml(next.teacher)}` : ""}
+          ${next.comment ? `<br>${escapeHtml(next.comment)}` : ""}
+        </div>
+      `;
+    }
+
+    function renderStudio(studio){
+      const cls = studio.status || "nodata";
+      const activeEvent = studio.current ? eventHtml(studio.current, "Сейчас") : "";
+      const nextEvent = !studio.current ? eventHtml(studio.next, "Следующее") : nextHtml(studio.next);
+
+      return `
+        <article class="studioCard ${escapeHtml(cls)}">
+          <div class="cardTop">
+            <div class="room">${escapeHtml(studio.room)}</div>
+            <div class="badge">
+              <span class="dot"></span>
+              ${escapeHtml(studio.statusText)}
+            </div>
+          </div>
+
+          <div class="mainStatus">
+            <div class="statusText">${escapeHtml(studio.message || studio.statusText)}</div>
+            <div class="message">${studio.until ? "До " + escapeHtml(studio.until) : ""}</div>
+          </div>
+
+          ${activeEvent}
+          ${nextEvent}
+        </article>
+      `;
+    }
+
+    function render(data){
+      const studios = Array.isArray(data.studios) ? data.studios : [];
+
+      const free = studios.filter(s => s.status === "free").length;
+      const busy = studios.filter(s => s.status === "busy").length;
+      const soon = studios.filter(s => s.status === "soon").length;
+
+      freeCountEl.textContent = free;
+      busyCountEl.textContent = busy;
+      soonCountEl.textContent = soon;
+      totalCountEl.textContent = studios.length;
+
+      studiosGrid.innerHTML = studios.map(renderStudio).join("");
+
+      apiStatus.classList.remove("error");
+      apiStatus.querySelector("span:last-child").textContent = "API подключён";
+
+      updatedAtEl.textContent = `Последнее обновление: ${escapeHtml(data.currentTime || "—")}`;
+    }
+
+    async function loadData(){
+      try{
+        const res = await fetch(API_URL, { cache: "no-store" });
+        const data = await res.json();
+
+        if (!data.ok) {
+          throw new Error(data.message || "Ошибка API");
+        }
+
+        render(data);
+      } catch(err){
+        apiStatus.classList.add("error");
+        apiStatus.querySelector("span:last-child").textContent = "Ошибка подключения API";
+        updatedAtEl.textContent = err.message || "Ошибка загрузки";
+      }
+    }
+
+    updateLocalClock();
+    setInterval(updateLocalClock, 1000);
+
+    loadData();
+    setInterval(loadData, REFRESH_MS);
+  </script>
+</body>
+</html>
