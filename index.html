@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Табло студий ИПАМ — v10 stable fit</title>
+  <title>Табло студий ИПАМ</title>
 
   <style>
     :root{
@@ -686,7 +686,7 @@
       tvToggle.classList.toggle("active", enabled);
       tvToggle.textContent = enabled ? "Обычный режим" : "ТВ-режим";
       if (save) localStorage.setItem("ipamTabloTvMode", enabled ? "1" : "0");
-      if (typeof scheduleFitStable === "function") scheduleFitStable();
+      if (typeof scheduleFit === "function") scheduleFit();
     }
 
     const savedTvMode = localStorage.getItem("ipamTabloTvMode") === "1";
@@ -798,23 +798,8 @@
       return 4;
     }
 
-    let fitRaf = 0;
-
     function scheduleFit(){
-      if (fitRaf) window.cancelAnimationFrame(fitRaf);
-      fitRaf = window.requestAnimationFrame(() => {
-        fitRaf = 0;
-        fitCardsToViewport();
-      });
-    }
-
-    function scheduleFitStable(){
-      // Первый расчёт иногда срабатывает до полной стабилизации шрифтов/логотипа/высоты Chrome.
-      // Поэтому делаем несколько мягких пересчётов, без transform и без поломки мобильного скролла.
-      scheduleFit();
-      window.setTimeout(scheduleFit, 80);
-      window.setTimeout(scheduleFit, 250);
-      window.setTimeout(scheduleFit, 700);
+      window.requestAnimationFrame(fitCardsToViewport);
     }
 
     function fitCardsToViewport(){
@@ -853,12 +838,12 @@
       let cardH = Math.floor(available / rows);
 
       // Все карточки получают одну и ту же высоту. Она зависит только от экрана, а не от текста внутри.
-      const maxH = document.body.classList.contains("tv") ? 395 : 390;
-      const minH = columns === 4 ? 320 : 330;
+      const maxH = document.body.classList.contains("tv") ? 390 : 370;
+      const minH = columns === 4 ? 285 : 320;
       cardH = Math.max(minH, Math.min(maxH, cardH));
 
-      if (cardH < 345) document.body.classList.add("fitCompact");
-      if (cardH < 320) document.body.classList.add("fitUltra");
+      if (cardH < 330) document.body.classList.add("fitCompact");
+      if (cardH < 305) document.body.classList.add("fitUltra");
 
       document.documentElement.style.setProperty("--auto-card-height", `${cardH}px`);
       document.documentElement.style.setProperty("--auto-card-padding", cardH < 305 ? "18px" : cardH < 330 ? "20px" : "24px");
@@ -924,7 +909,7 @@
       apiStatus.querySelector("span:last-child").textContent = "API подключён";
 
       updatedAtEl.textContent = `Последнее обновление: ${escapeHtml(data.currentTime || "—")}`;
-      scheduleFitStable();
+      scheduleFit();
     }
 
     async function loadData(){
@@ -948,18 +933,10 @@
     setInterval(updateLocalClock, 1000);
 
     loadData();
-    window.addEventListener("resize", scheduleFitStable);
-    window.addEventListener("orientationchange", scheduleFitStable);
-    window.addEventListener("load", scheduleFitStable);
-
-    const logoImg = document.querySelector(".logoBox img");
-    if (logoImg) {
-      logoImg.addEventListener("load", scheduleFitStable);
-      logoImg.addEventListener("error", scheduleFitStable);
-    }
-
+    window.addEventListener("resize", scheduleFit);
+    window.addEventListener("orientationchange", scheduleFit);
     if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(scheduleFitStable);
+      document.fonts.ready.then(scheduleFit);
     }
     setInterval(loadData, REFRESH_MS);
   </script>
