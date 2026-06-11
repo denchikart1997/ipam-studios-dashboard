@@ -20,6 +20,9 @@
       --blue:#3b82f6;
       --shadow:0 18px 50px rgba(0,0,0,.35);
       --radius:24px;
+      --auto-card-height:360px;
+      --auto-card-padding:24px;
+      --auto-grid-gap:18px;
     }
 
     *{box-sizing:border-box}
@@ -193,18 +196,18 @@
     .grid{
       display:grid;
       grid-template-columns:repeat(4,minmax(0,1fr));
-      gap:18px;
+      gap:var(--auto-grid-gap);
     }
 
     .studioCard{
       position:relative;
-      height:clamp(330px, calc((100dvh - 305px) / 2), 380px);
-      min-height:330px;
+      height:var(--auto-card-height);
+      min-height:0;
       border-radius:var(--radius);
       border:1px solid var(--border);
       background:linear-gradient(180deg, rgba(255,255,255,.078), rgba(255,255,255,.038));
       box-shadow:var(--shadow);
-      padding:24px;
+      padding:var(--auto-card-padding);
       overflow:hidden;
       min-width:0;
       display:flex;
@@ -451,9 +454,54 @@
       background:rgba(59,130,246,.20);
     }
 
+
+
+    body.fitCompact .titleBlock h1{font-size:clamp(28px,3.5vw,46px)}
+    body.fitCompact .titleBlock p{font-size:14px; margin-top:6px}
+    body.fitCompact .logoBox{width:240px; min-height:68px}
+    body.fitCompact .clockBox{padding:14px 20px; min-width:210px}
+    body.fitCompact .time{font-size:clamp(46px,4.2vw,62px)}
+    body.fitCompact .date{margin-top:6px; font-size:14px}
+    body.fitCompact .summaryCard{padding:12px 14px}
+    body.fitCompact .summaryValue{font-size:24px}
+    body.fitCompact .room{font-size:34px}
+    body.fitCompact .statusText{font-size:26px}
+    body.fitCompact .mainStatus{margin-top:16px}
+    body.fitCompact .message{margin-top:5px; min-height:18px; font-size:14px}
+    body.fitCompact .eventBox{margin-top:10px; padding:12px}
+    body.fitCompact .eventName{font-size:16px}
+    body.fitCompact .eventTime{margin-bottom:6px}
+    body.fitCompact .teacher,
+    body.fitCompact .comment{margin-top:5px; font-size:13px; -webkit-line-clamp:1}
+    body.fitCompact .nextBox{padding-top:10px; font-size:13px; line-height:1.32; -webkit-line-clamp:4}
+    body.fitCompact .footer{margin-top:12px}
+
+    body.fitUltra .titleBlock p{display:none}
+    body.fitUltra .logoBox{width:220px; min-height:62px}
+    body.fitUltra .clockBox{padding:12px 18px; min-width:190px}
+    body.fitUltra .time{font-size:52px}
+    body.fitUltra .date{font-size:13px}
+    body.fitUltra .summary{gap:10px; margin-bottom:10px}
+    body.fitUltra .summaryCard{padding:10px 12px}
+    body.fitUltra .summaryLabel{font-size:12px}
+    body.fitUltra .summaryValue{font-size:22px}
+    body.fitUltra .room{font-size:31px}
+    body.fitUltra .badge{min-height:30px; font-size:12px; padding:0 10px}
+    body.fitUltra .statusText{font-size:23px}
+    body.fitUltra .mainStatus{margin-top:12px}
+    body.fitUltra .message{font-size:13px; min-height:16px}
+    body.fitUltra .eventBox{margin-top:8px; padding:10px}
+    body.fitUltra .eventTime{font-size:12px}
+    body.fitUltra .eventName{font-size:15px; -webkit-line-clamp:2}
+    body.fitUltra .teacher,
+    body.fitUltra .comment{display:none}
+    body.fitUltra .nextBox{padding-top:8px; font-size:12px; line-height:1.28; -webkit-line-clamp:3}
+    body.fitUltra .footer{margin-top:8px; font-size:12px}
+
     @media (max-width:1100px){
       .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
       .summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .studioCard{height:auto; min-height:320px}
     }
 
     @media (max-width:640px){
@@ -519,7 +567,7 @@
     body.tv .page{max-width:1840px}
     body.tv .hero{margin-bottom:18px}
     body.tv .grid{grid-template-columns:repeat(4,minmax(0,1fr)); gap:20px}
-    body.tv .studioCard{height:clamp(340px, calc((100dvh - 330px) / 2), 400px); min-height:340px; padding:26px}
+    body.tv .studioCard{height:var(--auto-card-height); min-height:0; padding:var(--auto-card-padding)}
     body.tv .room{font-size:46px}
     body.tv .statusText{font-size:36px}
     body.tv .eventName{font-size:20px}
@@ -534,7 +582,7 @@
       .page{max-width:1380px}
       .hero{margin-bottom:14px}
       .summary{margin-bottom:14px}
-      .studioCard{height:clamp(310px, calc((100dvh - 255px) / 2), 340px); min-height:310px; padding:20px}
+      .studioCard{height:var(--auto-card-height); min-height:0; padding:var(--auto-card-padding)}
       .room{font-size:34px}
       .statusText{font-size:26px}
       .eventName{font-size:16px}
@@ -552,7 +600,7 @@
       body.tv .page{max-width:1500px}
       body.tv .hero{margin-bottom:12px}
       body.tv .summary{margin-bottom:12px}
-      body.tv .studioCard{height:clamp(295px, calc((100dvh - 285px) / 2), 340px); min-height:295px; padding:20px}
+      body.tv .studioCard{height:var(--auto-card-height); min-height:0; padding:var(--auto-card-padding)}
       body.tv .room{font-size:40px}
       body.tv .statusText{font-size:30px}
       body.tv .eventName{font-size:18px}
@@ -631,11 +679,18 @@
     const params = new URLSearchParams(window.location.search);
     const tvToggle = document.getElementById("tvToggle");
 
+    let fitTimer = null;
+    function scheduleFit(){
+      window.clearTimeout(fitTimer);
+      fitTimer = window.setTimeout(fitDashboardHeight, 60);
+    }
+
     function setTvMode(enabled, save = true){
       document.body.classList.toggle("tv", enabled);
       tvToggle.classList.toggle("active", enabled);
       tvToggle.textContent = enabled ? "Обычный режим" : "ТВ-режим";
       if (save) localStorage.setItem("ipamTabloTvMode", enabled ? "1" : "0");
+      scheduleFit();
     }
 
     const savedTvMode = localStorage.getItem("ipamTabloTvMode") === "1";
@@ -654,6 +709,48 @@
     const busyCountEl = document.getElementById("busyCount");
     const soonCountEl = document.getElementById("soonCount");
     const totalCountEl = document.getElementById("totalCount");
+
+    function getGridColumns(){
+      const columns = getComputedStyle(studiosGrid).gridTemplateColumns;
+      if (!columns || columns === "none") return 1;
+      return columns.split(" ").filter(Boolean).length;
+    }
+
+    function fitDashboardHeight(){
+      const isPhone = window.matchMedia("(max-width: 640px)").matches;
+      const columns = getGridColumns();
+      const cardsCount = studiosGrid.querySelectorAll(".studioCard").length;
+
+      document.body.classList.remove("fitCompact", "fitUltra");
+
+      if (isPhone || columns < 4 || !cardsCount) {
+        document.documentElement.style.setProperty("--auto-card-height", "auto");
+        document.documentElement.style.setProperty("--auto-card-padding", "20px");
+        document.documentElement.style.setProperty("--auto-grid-gap", "18px");
+        return;
+      }
+
+      const rows = Math.ceil(cardsCount / columns);
+      const gridTop = studiosGrid.getBoundingClientRect().top;
+      const footerEl = document.querySelector(".footer");
+      const footerHeight = footerEl ? footerEl.getBoundingClientRect().height : 0;
+      const footerMargin = footerEl ? parseFloat(getComputedStyle(footerEl).marginTop) || 0 : 0;
+      const gridGap = parseFloat(getComputedStyle(studiosGrid).rowGap) || 18;
+      const bottomReserve = 18;
+      const available = window.innerHeight - gridTop - footerHeight - footerMargin - bottomReserve;
+      let cardHeight = Math.floor((available - gridGap * (rows - 1)) / rows);
+
+      if (cardHeight < 330) document.body.classList.add("fitCompact");
+      if (cardHeight < 305) document.body.classList.add("fitUltra");
+
+      cardHeight = Math.max(285, Math.min(cardHeight, document.body.classList.contains("tv") ? 405 : 390));
+      const padding = cardHeight < 305 ? 18 : cardHeight < 330 ? 20 : 24;
+      const gap = cardHeight < 305 ? 14 : cardHeight < 330 ? 16 : 18;
+
+      document.documentElement.style.setProperty("--auto-card-height", `${cardHeight}px`);
+      document.documentElement.style.setProperty("--auto-card-padding", `${padding}px`);
+      document.documentElement.style.setProperty("--auto-grid-gap", `${gap}px`);
+    }
 
     function escapeHtml(str){
       return String(str || "")
@@ -822,6 +919,11 @@
     setInterval(updateLocalClock, 1000);
 
     loadData();
+    window.addEventListener("resize", scheduleFit);
+    window.addEventListener("orientationchange", scheduleFit);
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(scheduleFit);
+    }
     setInterval(loadData, REFRESH_MS);
   </script>
 </body>
