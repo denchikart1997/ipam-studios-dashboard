@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Табло студий ИПАМ</title>
+  <title>Табло студий ИПАМ — v10 stable fit</title>
 
   <style>
     :root{
@@ -196,12 +196,14 @@
     .grid{
       display:grid;
       grid-template-columns:repeat(4,minmax(0,1fr));
+      grid-auto-rows:var(--auto-card-height);
+      align-items:stretch;
       gap:var(--auto-grid-gap);
     }
 
     .studioCard{
       position:relative;
-      height:var(--auto-card-height);
+      height:100%;
       min-height:0;
       border-radius:var(--radius);
       border:1px solid var(--border);
@@ -499,7 +501,7 @@
     body.fitUltra .footer{margin-top:8px; font-size:12px}
 
     @media (max-width:1100px){
-      .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .grid{grid-template-columns:repeat(2,minmax(0,1fr)); grid-auto-rows:auto}
       .summary{grid-template-columns:repeat(2,minmax(0,1fr))}
       .studioCard{height:auto; min-height:320px}
     }
@@ -533,7 +535,7 @@
         padding:16px 18px;
       }
       .time{font-size:52px}
-      .grid{grid-template-columns:1fr}
+      .grid{grid-template-columns:1fr; grid-auto-rows:auto}
       .summary{grid-template-columns:repeat(2,minmax(0,1fr))}
       .studioCard{
         height:auto;
@@ -566,8 +568,8 @@
 
     body.tv .page{max-width:1840px}
     body.tv .hero{margin-bottom:18px}
-    body.tv .grid{grid-template-columns:repeat(4,minmax(0,1fr)); gap:20px}
-    body.tv .studioCard{height:var(--auto-card-height); min-height:0; padding:var(--auto-card-padding)}
+    body.tv .grid{grid-template-columns:repeat(4,minmax(0,1fr)); grid-auto-rows:var(--auto-card-height); gap:20px}
+    body.tv .studioCard{height:100%; min-height:0; padding:var(--auto-card-padding)}
     body.tv .room{font-size:46px}
     body.tv .statusText{font-size:36px}
     body.tv .eventName{font-size:20px}
@@ -582,7 +584,7 @@
       .page{max-width:1380px}
       .hero{margin-bottom:14px}
       .summary{margin-bottom:14px}
-      .studioCard{height:var(--auto-card-height); min-height:0; padding:var(--auto-card-padding)}
+      .studioCard{height:100%; min-height:0; padding:var(--auto-card-padding)}
       .room{font-size:34px}
       .statusText{font-size:26px}
       .eventName{font-size:16px}
@@ -600,7 +602,7 @@
       body.tv .page{max-width:1500px}
       body.tv .hero{margin-bottom:12px}
       body.tv .summary{margin-bottom:12px}
-      body.tv .studioCard{height:var(--auto-card-height); min-height:0; padding:var(--auto-card-padding)}
+      body.tv .studioCard{height:100%; min-height:0; padding:var(--auto-card-padding)}
       body.tv .room{font-size:40px}
       body.tv .statusText{font-size:30px}
       body.tv .eventName{font-size:18px}
@@ -609,7 +611,7 @@
     }
 
     @media (max-width:1200px){
-      body.tv .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      body.tv .grid{grid-template-columns:repeat(2,minmax(0,1fr)); grid-auto-rows:auto}
       body.tv .studioCard{height:auto; min-height:320px}
     }
   </style>
@@ -679,18 +681,12 @@
     const params = new URLSearchParams(window.location.search);
     const tvToggle = document.getElementById("tvToggle");
 
-    let fitTimer = null;
-    function scheduleFit(){
-      window.clearTimeout(fitTimer);
-      fitTimer = window.setTimeout(fitDashboardHeight, 60);
-    }
-
     function setTvMode(enabled, save = true){
       document.body.classList.toggle("tv", enabled);
       tvToggle.classList.toggle("active", enabled);
       tvToggle.textContent = enabled ? "Обычный режим" : "ТВ-режим";
       if (save) localStorage.setItem("ipamTabloTvMode", enabled ? "1" : "0");
-      scheduleFit();
+      if (typeof scheduleFitStable === "function") scheduleFitStable();
     }
 
     const savedTvMode = localStorage.getItem("ipamTabloTvMode") === "1";
@@ -709,48 +705,6 @@
     const busyCountEl = document.getElementById("busyCount");
     const soonCountEl = document.getElementById("soonCount");
     const totalCountEl = document.getElementById("totalCount");
-
-    function getGridColumns(){
-      const columns = getComputedStyle(studiosGrid).gridTemplateColumns;
-      if (!columns || columns === "none") return 1;
-      return columns.split(" ").filter(Boolean).length;
-    }
-
-    function fitDashboardHeight(){
-      const isPhone = window.matchMedia("(max-width: 640px)").matches;
-      const columns = getGridColumns();
-      const cardsCount = studiosGrid.querySelectorAll(".studioCard").length;
-
-      document.body.classList.remove("fitCompact", "fitUltra");
-
-      if (isPhone || columns < 4 || !cardsCount) {
-        document.documentElement.style.setProperty("--auto-card-height", "auto");
-        document.documentElement.style.setProperty("--auto-card-padding", "20px");
-        document.documentElement.style.setProperty("--auto-grid-gap", "18px");
-        return;
-      }
-
-      const rows = Math.ceil(cardsCount / columns);
-      const gridTop = studiosGrid.getBoundingClientRect().top;
-      const footerEl = document.querySelector(".footer");
-      const footerHeight = footerEl ? footerEl.getBoundingClientRect().height : 0;
-      const footerMargin = footerEl ? parseFloat(getComputedStyle(footerEl).marginTop) || 0 : 0;
-      const gridGap = parseFloat(getComputedStyle(studiosGrid).rowGap) || 18;
-      const bottomReserve = 18;
-      const available = window.innerHeight - gridTop - footerHeight - footerMargin - bottomReserve;
-      let cardHeight = Math.floor((available - gridGap * (rows - 1)) / rows);
-
-      if (cardHeight < 330) document.body.classList.add("fitCompact");
-      if (cardHeight < 305) document.body.classList.add("fitUltra");
-
-      cardHeight = Math.max(285, Math.min(cardHeight, document.body.classList.contains("tv") ? 405 : 390));
-      const padding = cardHeight < 305 ? 18 : cardHeight < 330 ? 20 : 24;
-      const gap = cardHeight < 305 ? 14 : cardHeight < 330 ? 16 : 18;
-
-      document.documentElement.style.setProperty("--auto-card-height", `${cardHeight}px`);
-      document.documentElement.style.setProperty("--auto-card-padding", `${padding}px`);
-      document.documentElement.style.setProperty("--auto-grid-gap", `${gap}px`);
-    }
 
     function escapeHtml(str){
       return String(str || "")
@@ -837,6 +791,80 @@
       `;
     }
 
+
+    function getDesktopColumns(){
+      if (window.innerWidth <= 640) return 1;
+      if (window.innerWidth <= 1100) return 2;
+      return 4;
+    }
+
+    let fitRaf = 0;
+
+    function scheduleFit(){
+      if (fitRaf) window.cancelAnimationFrame(fitRaf);
+      fitRaf = window.requestAnimationFrame(() => {
+        fitRaf = 0;
+        fitCardsToViewport();
+      });
+    }
+
+    function scheduleFitStable(){
+      // Первый расчёт иногда срабатывает до полной стабилизации шрифтов/логотипа/высоты Chrome.
+      // Поэтому делаем несколько мягких пересчётов, без transform и без поломки мобильного скролла.
+      scheduleFit();
+      window.setTimeout(scheduleFit, 80);
+      window.setTimeout(scheduleFit, 250);
+      window.setTimeout(scheduleFit, 700);
+    }
+
+    function fitCardsToViewport(){
+      const isMobile = window.innerWidth <= 640;
+
+      // На мобильной версии ничего не подгоняем: там нормальный вертикальный скролл.
+      if (isMobile) {
+        document.body.classList.remove("fitCompact", "fitUltra");
+        document.documentElement.style.removeProperty("--auto-card-height");
+        document.documentElement.style.removeProperty("--auto-card-padding");
+        document.documentElement.style.removeProperty("--auto-grid-gap");
+        return;
+      }
+
+      const cardsCount = studiosGrid.querySelectorAll(".studioCard").length;
+      if (!cardsCount) return;
+
+      const columns = getDesktopColumns();
+      const rows = Math.max(1, Math.ceil(cardsCount / columns));
+
+      document.body.classList.remove("fitCompact", "fitUltra");
+
+      const viewportH = window.innerHeight || document.documentElement.clientHeight;
+      const gridTop = studiosGrid.getBoundingClientRect().top;
+      const footer = document.querySelector(".footer");
+      const footerH = footer ? footer.getBoundingClientRect().height : 0;
+      const bodyPaddingBottom = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+
+      let gap = 18;
+      if (document.body.classList.contains("tv")) gap = 20;
+      if (viewportH < 820) gap = 14;
+      if (viewportH < 740) gap = 12;
+
+      const safeBottom = bodyPaddingBottom + footerH + 18;
+      const available = viewportH - gridTop - safeBottom - gap * (rows - 1);
+      let cardH = Math.floor(available / rows);
+
+      // Все карточки получают одну и ту же высоту. Она зависит только от экрана, а не от текста внутри.
+      const maxH = document.body.classList.contains("tv") ? 395 : 390;
+      const minH = columns === 4 ? 320 : 330;
+      cardH = Math.max(minH, Math.min(maxH, cardH));
+
+      if (cardH < 345) document.body.classList.add("fitCompact");
+      if (cardH < 320) document.body.classList.add("fitUltra");
+
+      document.documentElement.style.setProperty("--auto-card-height", `${cardH}px`);
+      document.documentElement.style.setProperty("--auto-card-padding", cardH < 305 ? "18px" : cardH < 330 ? "20px" : "24px");
+      document.documentElement.style.setProperty("--auto-grid-gap", `${gap}px`);
+    }
+
     function renderStudio(studio){
       const cls = studio.status || "nodata";
       const activeEvent = studio.current ? eventHtml(studio.current, "Сейчас") : "";
@@ -896,6 +924,7 @@
       apiStatus.querySelector("span:last-child").textContent = "API подключён";
 
       updatedAtEl.textContent = `Последнее обновление: ${escapeHtml(data.currentTime || "—")}`;
+      scheduleFitStable();
     }
 
     async function loadData(){
@@ -919,10 +948,18 @@
     setInterval(updateLocalClock, 1000);
 
     loadData();
-    window.addEventListener("resize", scheduleFit);
-    window.addEventListener("orientationchange", scheduleFit);
+    window.addEventListener("resize", scheduleFitStable);
+    window.addEventListener("orientationchange", scheduleFitStable);
+    window.addEventListener("load", scheduleFitStable);
+
+    const logoImg = document.querySelector(".logoBox img");
+    if (logoImg) {
+      logoImg.addEventListener("load", scheduleFitStable);
+      logoImg.addEventListener("error", scheduleFitStable);
+    }
+
     if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(scheduleFit);
+      document.fonts.ready.then(scheduleFitStable);
     }
     setInterval(loadData, REFRESH_MS);
   </script>
