@@ -24,10 +24,16 @@
 
     *{box-sizing:border-box}
 
+    html{
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      text-rendering:geometricPrecision;
+    }
+
     html,body{
       margin:0;
       min-height:100%;
-      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+      font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
       color:var(--text);
       background:
         radial-gradient(1200px 600px at 50% -200px, rgba(15,42,74,.95), transparent 60%),
@@ -89,9 +95,9 @@
     .logoFallback{
       display:none;
       font-size:22px;
-      font-weight:900;
-      letter-spacing:-.03em;
-      line-height:1.1;
+      font-weight:760;
+      letter-spacing:-.01em;
+      line-height:1.12;
     }
 
     .logoBox.logoError img{display:none}
@@ -103,8 +109,8 @@
       margin:0;
       font-size:clamp(28px,4vw,52px);
       line-height:1;
-      font-weight:900;
-      letter-spacing:-.03em;
+      font-weight:820;
+      letter-spacing:-.006em;
     }
 
     .titleBlock p{
@@ -116,25 +122,29 @@
 
     .clockBox{
       text-align:right;
-      padding:14px 18px;
-      border-radius:20px;
-      border:1px solid var(--border);
-      background:rgba(255,255,255,.06);
-      min-width:180px;
+      padding:18px 24px;
+      border-radius:22px;
+      border:1px solid rgba(255,255,255,.15);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.105), rgba(255,255,255,.045));
+      min-width:230px;
       flex:0 0 auto;
+      box-shadow:0 18px 44px rgba(0,0,0,.26);
     }
 
     .time{
-      font-size:38px;
-      font-weight:900;
-      line-height:1;
-      letter-spacing:-.025em;
+      font-size:clamp(48px,5vw,74px);
+      font-weight:760;
+      line-height:.92;
+      letter-spacing:-.008em;
+      font-variant-numeric:tabular-nums;
     }
 
     .date{
-      margin-top:6px;
+      margin-top:10px;
       color:var(--muted);
-      font-size:15px;
+      font-size:16px;
+      letter-spacing:.01em;
     }
 
     .summary{
@@ -161,7 +171,7 @@
 
     .summaryValue{
       font-size:28px;
-      font-weight:900;
+      font-weight:760;
       line-height:1;
     }
 
@@ -208,8 +218,8 @@
 
     .room{
       font-size:34px;
-      font-weight:900;
-      letter-spacing:-.02em;
+      font-weight:800;
+      letter-spacing:-.006em;
       line-height:1;
       min-width:0;
       word-break:break-word;
@@ -223,7 +233,7 @@
       padding:0 12px;
       border-radius:999px;
       font-size:13px;
-      font-weight:800;
+      font-weight:760;
       white-space:nowrap;
       background:rgba(255,255,255,.08);
       border:1px solid rgba(255,255,255,.12);
@@ -251,9 +261,9 @@
 
     .statusText{
       font-size:28px;
-      font-weight:900;
+      font-weight:800;
       line-height:1.05;
-      letter-spacing:-.02em;
+      letter-spacing:-.006em;
       word-break:break-word;
     }
 
@@ -278,13 +288,13 @@
     .eventTime{
       font-size:13px;
       color:#cfe4ff;
-      font-weight:800;
+      font-weight:760;
       margin-bottom:8px;
     }
 
     .eventName{
       font-size:17px;
-      font-weight:850;
+      font-weight:760;
       line-height:1.25;
       word-break:break-word;
     }
@@ -372,7 +382,7 @@
       padding:0 12px;
       border-radius:999px;
       font-size:12px;
-      font-weight:800;
+      font-weight:760;
       cursor:pointer;
     }
 
@@ -408,7 +418,13 @@
         width:100%;
         max-width:none;
       }
-      .clockBox{text-align:left}
+      .clockBox{
+        text-align:left;
+        width:100%;
+        min-width:0;
+        padding:16px 18px;
+      }
+      .time{font-size:52px}
       .grid{grid-template-columns:1fr}
       .summary{grid-template-columns:repeat(2,minmax(0,1fr))}
       .studioCard{min-height:auto}
@@ -432,6 +448,9 @@
     body.tv .eventName{font-size:20px}
     body.tv .summaryValue{font-size:32px}
     body.tv .titleBlock p{display:none}
+    body.tv .clockBox{min-width:280px; padding:20px 28px}
+    body.tv .time{font-size:78px}
+    body.tv .date{font-size:18px}
 
     @media (max-width:1200px){
       body.tv .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
