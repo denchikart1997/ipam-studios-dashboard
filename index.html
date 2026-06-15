@@ -8,12 +8,11 @@
   <style>
     :root{
       --bg:#030914;
-      --card:rgba(255,255,255,.075);
+      --card:rgba(255,255,255,.07);
       --card2:rgba(255,255,255,.04);
       --border:rgba(255,255,255,.12);
       --text:rgba(255,255,255,.94);
       --muted:rgba(255,255,255,.62);
-      --muted2:rgba(255,255,255,.42);
       --green:#22c55e;
       --red:#ef4444;
       --yellow:#f59e0b;
@@ -21,32 +20,55 @@
       --blue:#3b82f6;
       --shadow:0 18px 50px rgba(0,0,0,.35);
       --radius:24px;
-      --ease:cubic-bezier(.22,1,.36,1);
+      --auto-card-height:360px;
+      --auto-card-padding:24px;
+      --auto-grid-gap:18px;
     }
 
     *{box-sizing:border-box}
 
+    html{
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      text-rendering:geometricPrecision;
+    }
+
     html,body{
       margin:0;
       min-height:100%;
-      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+      font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
       color:var(--text);
-      background:
-        radial-gradient(1200px 600px at 50% -200px, rgba(15,42,74,.95), transparent 60%),
-        radial-gradient(700px 460px at 8% 12%, rgba(59,130,246,.16), transparent 62%),
-        radial-gradient(700px 460px at 92% 18%, rgba(34,197,94,.10), transparent 62%),
-        linear-gradient(180deg, #061225 0%, #030914 100%);
-      background-color:#030914;
+      background:#030914;
+      overflow-x:hidden;
     }
 
     body{
-      padding:20px;
-      overscroll-behavior-y:none;
+      position:relative;
+      isolation:isolate;
+      min-height:100dvh;
+      padding:22px;
+      overflow-y:auto;
+      -webkit-overflow-scrolling:touch;
+    }
+
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      z-index:-1;
+      pointer-events:none;
+      background:
+        radial-gradient(1200px 650px at 50% -180px, rgba(22,52,92,.96), transparent 62%),
+        radial-gradient(900px 520px at 7% 14%, rgba(59,130,246,.13), transparent 66%),
+        radial-gradient(900px 520px at 94% 18%, rgba(34,197,94,.08), transparent 66%),
+        radial-gradient(1200px 520px at 50% 112%, rgba(15,42,74,.22), transparent 66%),
+        linear-gradient(180deg, #061225 0%, #030914 58%, #020712 100%);
+      background-attachment:fixed;
     }
 
     .page{
       width:100%;
-      max-width:1320px;
+      max-width:1460px;
       margin:0 auto;
     }
 
@@ -55,7 +77,7 @@
       align-items:center;
       justify-content:space-between;
       gap:18px;
-      margin-bottom:16px;
+      margin-bottom:20px;
     }
 
     .brand{
@@ -66,13 +88,17 @@
     }
 
     .logoBox{
-      width:250px;
+      width:260px;
       max-width:42vw;
+      min-height:78px;
       padding:10px 16px;
       border-radius:20px;
       border:1px solid var(--border);
       background:linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.04));
       box-shadow:var(--shadow);
+      display:flex;
+      align-items:center;
+      justify-content:center;
       flex:0 0 auto;
     }
 
@@ -80,16 +106,29 @@
       display:block;
       width:100%;
       height:auto;
+      max-height:70px;
+      object-fit:contain;
     }
+
+    .logoFallback{
+      display:none;
+      font-size:22px;
+      font-weight:760;
+      letter-spacing:-.01em;
+      line-height:1.12;
+    }
+
+    .logoBox.logoError img{display:none}
+    .logoBox.logoError .logoFallback{display:block}
 
     .titleBlock{min-width:0}
 
     .titleBlock h1{
       margin:0;
-      font-size:clamp(30px,4vw,56px);
-      line-height:.98;
-      font-weight:950;
-      letter-spacing:-.045em;
+      font-size:clamp(28px,4vw,52px);
+      line-height:1;
+      font-weight:820;
+      letter-spacing:-.006em;
     }
 
     .titleBlock p{
@@ -101,98 +140,35 @@
 
     .clockBox{
       text-align:right;
-      padding:14px 18px;
-      border-radius:20px;
-      border:1px solid var(--border);
-      background:rgba(255,255,255,.06);
-      min-width:190px;
-      box-shadow:0 10px 28px rgba(0,0,0,.18);
+      padding:18px 24px;
+      border-radius:22px;
+      border:1px solid rgba(255,255,255,.15);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.105), rgba(255,255,255,.045));
+      min-width:230px;
+      flex:0 0 auto;
+      box-shadow:0 18px 44px rgba(0,0,0,.26);
     }
 
     .time{
-      font-size:40px;
-      font-weight:950;
-      line-height:1;
-      letter-spacing:-.04em;
+      font-size:clamp(48px,5vw,74px);
+      font-weight:760;
+      line-height:.92;
+      letter-spacing:-.008em;
+      font-variant-numeric:tabular-nums;
     }
 
     .date{
-      margin-top:6px;
+      margin-top:10px;
       color:var(--muted);
-      font-size:15px;
+      font-size:16px;
+      letter-spacing:.01em;
     }
-
-    .headline{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:14px;
-      margin-bottom:14px;
-      padding:14px 16px;
-      border-radius:20px;
-      border:1px solid var(--border);
-      background:linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.035));
-      box-shadow:0 12px 34px rgba(0,0,0,.20);
-    }
-
-    .headlineMain{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      min-width:0;
-    }
-
-    .headlineDot{
-      width:12px;
-      height:12px;
-      border-radius:999px;
-      background:var(--green);
-      box-shadow:0 0 18px rgba(34,197,94,.55);
-      flex:0 0 auto;
-    }
-
-    .headlineTitle{
-      font-size:22px;
-      font-weight:950;
-      letter-spacing:-.02em;
-      line-height:1.1;
-    }
-
-    .headlineSub{
-      color:var(--muted);
-      font-size:14px;
-      margin-top:3px;
-    }
-
-    .refreshPill{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      min-height:36px;
-      padding:0 12px;
-      border-radius:999px;
-      background:rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.10);
-      color:var(--muted);
-      font-size:13px;
-      white-space:nowrap;
-    }
-
-    .refreshSpin{
-      width:10px;
-      height:10px;
-      border-radius:50%;
-      border:2px solid rgba(255,255,255,.20);
-      border-top-color:rgba(255,255,255,.8);
-      animation:spin 1.1s linear infinite;
-    }
-
-    @keyframes spin{to{transform:rotate(360deg)}}
 
     .summary{
       display:grid;
-      grid-template-columns:repeat(4,1fr);
-      gap:12px;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:14px;
       margin-bottom:18px;
     }
 
@@ -200,8 +176,9 @@
       border:1px solid var(--border);
       background:rgba(255,255,255,.055);
       border-radius:18px;
-      padding:14px;
+      padding:16px;
       box-shadow:0 10px 28px rgba(0,0,0,.18);
+      min-width:0;
     }
 
     .summaryLabel{
@@ -211,28 +188,64 @@
     }
 
     .summaryValue{
-      font-size:30px;
-      font-weight:950;
-      letter-spacing:-.04em;
+      font-size:28px;
+      font-weight:760;
+      line-height:1;
     }
 
     .grid{
       display:grid;
-      grid-template-columns:repeat(4,1fr);
-      gap:16px;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      grid-auto-rows:var(--auto-card-height);
+      align-items:stretch;
+      gap:var(--auto-grid-gap);
     }
 
     .studioCard{
       position:relative;
-      min-height:286px;
+      height:100%;
+      min-height:0;
       border-radius:var(--radius);
       border:1px solid var(--border);
-      background:linear-gradient(180deg, var(--card), var(--card2));
+      background:linear-gradient(180deg, rgba(255,255,255,.078), rgba(255,255,255,.038));
       box-shadow:var(--shadow);
-      padding:20px;
+      padding:var(--auto-card-padding);
       overflow:hidden;
-      transition:transform .22s var(--ease), border-color .22s var(--ease), background .22s var(--ease);
-      transform:translateZ(0);
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+    }
+
+    /*
+      На больших экранах карточка фиксированная по высоте.
+      Поэтому длинные названия/комментарии не растягивают всю сетку,
+      а аккуратно обрезаются внутри карточки. На телефоне ниже возвращаем auto.
+    */
+    .clamp1,
+    .badge,
+    .eventTime{
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    .clamp2,
+    .statusText,
+    .eventName{
+      display:-webkit-box;
+      -webkit-line-clamp:2;
+      -webkit-box-orient:vertical;
+      overflow:hidden;
+    }
+
+    .clamp3,
+    .teacher,
+    .comment,
+    .nextBox{
+      display:-webkit-box;
+      -webkit-line-clamp:3;
+      -webkit-box-orient:vertical;
+      overflow:hidden;
     }
 
     .studioCard::before{
@@ -243,26 +256,10 @@
       pointer-events:none;
     }
 
-    .studioCard.busy::before{background:radial-gradient(420px 260px at 20% 0%, var(--red), transparent 65%)}
-    .studioCard.free::before{background:radial-gradient(420px 260px at 20% 0%, var(--green), transparent 65%)}
-    .studioCard.soon::before{background:radial-gradient(420px 260px at 20% 0%, var(--yellow), transparent 65%)}
-    .studioCard.nodata::before{background:radial-gradient(420px 260px at 20% 0%, var(--gray), transparent 65%)}
-
-    .studioCard::after{
-      content:"";
-      position:absolute;
-      left:0;
-      top:0;
-      bottom:0;
-      width:5px;
-      background:var(--gray);
-      opacity:.95;
-    }
-
-    .studioCard.busy::after{background:var(--red)}
-    .studioCard.free::after{background:var(--green)}
-    .studioCard.soon::after{background:var(--yellow)}
-    .studioCard.nodata::after{background:var(--gray)}
+    .studioCard.busy::before{background:radial-gradient(520px 320px at 18% 0%, var(--red), transparent 65%)}
+    .studioCard.free::before{background:radial-gradient(520px 320px at 18% 0%, var(--green), transparent 65%)}
+    .studioCard.soon::before{background:radial-gradient(520px 320px at 18% 0%, var(--yellow), transparent 65%)}
+    .studioCard.nodata::before{background:radial-gradient(520px 320px at 18% 0%, var(--gray), transparent 65%)}
 
     .cardTop{
       display:flex;
@@ -271,13 +268,16 @@
       gap:12px;
       position:relative;
       z-index:1;
+      min-width:0;
     }
 
     .room{
-      font-size:36px;
-      font-weight:950;
-      letter-spacing:-.035em;
+      font-size:38px;
+      font-weight:800;
+      letter-spacing:-.006em;
       line-height:1;
+      min-width:0;
+      word-break:break-word;
     }
 
     .badge{
@@ -288,10 +288,11 @@
       padding:0 12px;
       border-radius:999px;
       font-size:13px;
-      font-weight:850;
+      font-weight:760;
       white-space:nowrap;
       background:rgba(255,255,255,.08);
       border:1px solid rgba(255,255,255,.12);
+      flex:0 0 auto;
     }
 
     .dot{
@@ -308,97 +309,85 @@
     .soon .dot{background:var(--yellow); box-shadow:0 0 16px rgba(245,158,11,.55)}
 
     .mainStatus{
-      margin-top:22px;
+      margin-top:24px;
       position:relative;
       z-index:1;
+      flex:0 0 auto;
     }
 
     .statusText{
-      font-size:29px;
-      font-weight:950;
+      font-size:30px;
+      font-weight:800;
       line-height:1.05;
-      letter-spacing:-.035em;
+      letter-spacing:-.006em;
+      word-break:break-word;
     }
 
     .message{
       margin-top:8px;
       color:var(--muted);
-      font-size:15px;
+      font-size:16px;
       line-height:1.35;
+      min-height:22px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
     }
 
     .eventBox{
       position:relative;
       z-index:1;
       margin-top:18px;
-      padding:14px;
+      padding:16px;
       border-radius:16px;
-      background:rgba(0,0,0,.20);
+      background:rgba(0,0,0,.18);
       border:1px solid rgba(255,255,255,.08);
-    }
-
-    .eventBox.next{background:rgba(255,255,255,.045)}
-
-    .eventLabel{
-      font-size:11px;
-      color:#cfe4ff;
-      font-weight:900;
-      letter-spacing:.08em;
-      text-transform:uppercase;
-      margin-bottom:7px;
+      min-height:0;
+      flex:0 0 auto;
     }
 
     .eventTime{
-      font-size:14px;
-      color:rgba(255,255,255,.82);
-      font-weight:850;
+      font-size:13px;
+      color:#cfe4ff;
+      font-weight:760;
       margin-bottom:8px;
     }
 
     .eventName{
-      font-size:17px;
-      font-weight:900;
+      font-size:18px;
+      font-weight:760;
       line-height:1.25;
       word-break:break-word;
     }
 
-    .teacher,.comment{
+    .teacher,
+    .comment{
       margin-top:8px;
       color:var(--muted);
       font-size:14px;
       line-height:1.35;
       word-break:break-word;
+      -webkit-line-clamp:2;
     }
 
-    .commentBadge{
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      margin-top:10px;
-      padding:6px 9px;
-      border-radius:999px;
-      background:rgba(59,130,246,.12);
-      border:1px solid rgba(59,130,246,.22);
-      color:#cfe4ff;
-      font-size:13px;
-      font-weight:800;
-    }
-
-    .emptyBox{
+    .nextBox{
       position:relative;
       z-index:1;
-      margin-top:18px;
-      padding:14px;
-      border-radius:16px;
-      border:1px solid rgba(255,255,255,.08);
-      background:rgba(255,255,255,.04);
+      margin-top:auto;
+      padding-top:14px;
+      border-top:1px solid rgba(255,255,255,.10);
       color:var(--muted);
       font-size:14px;
-      line-height:1.4;
+      line-height:1.38;
+      word-break:break-word;
+      -webkit-line-clamp:4;
+      flex:0 0 auto;
     }
 
+    .nextBox strong{color:rgba(255,255,255,.9)}
+
     .footer{
-      margin-top:18px;
+      margin-top:20px;
       display:flex;
       justify-content:space-between;
       gap:12px;
@@ -418,6 +407,7 @@
       border-radius:50%;
       background:var(--green);
       box-shadow:0 0 12px rgba(34,197,94,.5);
+      flex:0 0 auto;
     }
 
     .error .smallDot{background:var(--red); box-shadow:0 0 12px rgba(239,68,68,.5)}
@@ -432,55 +422,318 @@
       background:rgba(255,255,255,.05);
     }
 
-    @media (hover:hover){
-      .studioCard:hover{transform:translateY(-2px)}
+    .viewControls{
+      position:fixed;
+      top:14px;
+      right:14px;
+      z-index:50;
+      display:flex;
+      gap:8px;
+      opacity:.38;
+      transition:opacity .18s ease;
     }
 
+    .viewControls:hover{opacity:1}
+
+    .viewBtn{
+      appearance:none;
+      border:1px solid rgba(255,255,255,.16);
+      background:rgba(3,9,20,.62);
+      color:rgba(255,255,255,.82);
+      backdrop-filter:blur(12px);
+      -webkit-backdrop-filter:blur(12px);
+      min-height:34px;
+      padding:0 12px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:760;
+      cursor:pointer;
+    }
+
+    .viewBtn.active{
+      color:#fff;
+      border-color:rgba(59,130,246,.45);
+      background:rgba(59,130,246,.20);
+    }
+
+
+
+    body.fitCompact .titleBlock h1{font-size:clamp(28px,3.5vw,46px)}
+    body.fitCompact .titleBlock p{font-size:14px; margin-top:6px}
+    body.fitCompact .logoBox{width:240px; min-height:68px}
+    body.fitCompact .clockBox{padding:14px 20px; min-width:210px}
+    body.fitCompact .time{font-size:clamp(46px,4.2vw,62px)}
+    body.fitCompact .date{margin-top:6px; font-size:14px}
+    body.fitCompact .summaryCard{padding:12px 14px}
+    body.fitCompact .summaryValue{font-size:24px}
+    body.fitCompact .room{font-size:34px}
+    body.fitCompact .statusText{font-size:26px}
+    body.fitCompact .mainStatus{margin-top:16px}
+    body.fitCompact .message{margin-top:5px; min-height:18px; font-size:14px}
+    body.fitCompact .eventBox{margin-top:10px; padding:12px}
+    body.fitCompact .eventName{font-size:16px}
+    body.fitCompact .eventTime{margin-bottom:6px}
+    body.fitCompact .teacher,
+    body.fitCompact .comment{margin-top:5px; font-size:13px; -webkit-line-clamp:1}
+    body.fitCompact .nextBox{padding-top:10px; font-size:13px; line-height:1.32; -webkit-line-clamp:4}
+    body.fitCompact .footer{margin-top:12px}
+
+    body.fitUltra .titleBlock p{display:none}
+    body.fitUltra .logoBox{width:220px; min-height:62px}
+    body.fitUltra .clockBox{padding:12px 18px; min-width:190px}
+    body.fitUltra .time{font-size:52px}
+    body.fitUltra .date{font-size:13px}
+    body.fitUltra .summary{gap:10px; margin-bottom:10px}
+    body.fitUltra .summaryCard{padding:10px 12px}
+    body.fitUltra .summaryLabel{font-size:12px}
+    body.fitUltra .summaryValue{font-size:22px}
+    body.fitUltra .room{font-size:31px}
+    body.fitUltra .badge{min-height:30px; font-size:12px; padding:0 10px}
+    body.fitUltra .statusText{font-size:23px}
+    body.fitUltra .mainStatus{margin-top:12px}
+    body.fitUltra .message{font-size:13px; min-height:16px}
+    body.fitUltra .eventBox{margin-top:8px; padding:10px}
+    body.fitUltra .eventTime{font-size:12px}
+    body.fitUltra .eventName{font-size:15px; -webkit-line-clamp:2}
+    body.fitUltra .teacher,
+    body.fitUltra .comment{display:none}
+    body.fitUltra .nextBox{padding-top:8px; font-size:12px; line-height:1.28; -webkit-line-clamp:3}
+    body.fitUltra .footer{margin-top:8px; font-size:12px}
+
+
+
+    .eventDayCard::before{
+      background:radial-gradient(520px 320px at 18% 0%, var(--blue), transparent 65%) !important;
+      opacity:.16;
+    }
+
+    .eventDayCard.empty::before{
+      background:radial-gradient(520px 320px at 18% 0%, var(--gray), transparent 65%) !important;
+      opacity:.13;
+    }
+
+    .eventDayCard .dot{background:var(--blue); box-shadow:0 0 16px rgba(59,130,246,.55)}
+    .eventDayCard.empty .dot{background:var(--gray); box-shadow:0 0 12px rgba(148,163,184,.35)}
+
+    .dayDate{
+      color:var(--muted);
+      font-size:15px;
+      margin-top:6px;
+      line-height:1.25;
+    }
+
+    .eventList{
+      position:relative;
+      z-index:1;
+      margin-top:18px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      min-height:0;
+      overflow:hidden;
+    }
+
+    .weekEvent{
+      padding:12px 14px;
+      border-radius:15px;
+      background:rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.08);
+      min-width:0;
+    }
+
+    .weekEventTime{
+      font-size:13px;
+      color:#cfe4ff;
+      font-weight:760;
+      margin-bottom:6px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    .weekEventTitle{
+      font-size:17px;
+      font-weight:780;
+      line-height:1.22;
+      display:-webkit-box;
+      -webkit-line-clamp:2;
+      -webkit-box-orient:vertical;
+      overflow:hidden;
+      word-break:break-word;
+    }
+
+    .weekEventMeta{
+      margin-top:7px;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.3;
+      display:-webkit-box;
+      -webkit-line-clamp:2;
+      -webkit-box-orient:vertical;
+      overflow:hidden;
+      word-break:break-word;
+    }
+
+    .emptyDayText{
+      position:relative;
+      z-index:1;
+      margin-top:18px;
+      padding:14px;
+      border-radius:16px;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);
+      color:var(--muted);
+      font-size:15px;
+      line-height:1.35;
+    }
+
+    body.fitCompact .eventList{margin-top:10px; gap:8px}
+    body.fitCompact .weekEvent{padding:10px 12px}
+    body.fitCompact .weekEventTitle{font-size:15px}
+    body.fitCompact .weekEventMeta{font-size:12px; -webkit-line-clamp:1}
+
+    body.fitUltra .eventList{margin-top:8px; gap:7px}
+    body.fitUltra .weekEvent{padding:9px 10px}
+    body.fitUltra .weekEventTime{font-size:12px}
+    body.fitUltra .weekEventTitle{font-size:14px; -webkit-line-clamp:2}
+    body.fitUltra .weekEventMeta{display:none}
+
     @media (max-width:1100px){
-      .grid{grid-template-columns:repeat(2,1fr)}
-      .summary{grid-template-columns:repeat(2,1fr)}
+      .grid{grid-template-columns:repeat(2,minmax(0,1fr)); grid-auto-rows:auto}
+      .summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .studioCard{height:auto; min-height:320px}
     }
 
     @media (max-width:640px){
       body{padding:12px}
-      .hero{flex-direction:column; align-items:stretch}
-      .brand{flex-direction:column; align-items:stretch}
-      .logoBox{width:100%; max-width:none}
-      .clockBox{text-align:left}
-      .headline{flex-direction:column; align-items:flex-start}
-      .summary{grid-template-columns:repeat(2,1fr)}
-      .grid{grid-template-columns:1fr}
-      .studioCard{min-height:auto}
+      .page{max-width:none}
+      .viewControls{
+        position:static;
+        justify-content:flex-end;
+        margin:0 0 10px;
+        opacity:.75;
+      }
+      .hero{
+        flex-direction:column;
+        align-items:stretch;
+        margin-bottom:16px;
+      }
+      .brand{
+        flex-direction:column;
+        align-items:stretch;
+      }
+      .logoBox{
+        width:100%;
+        max-width:none;
+      }
+      .clockBox{
+        text-align:left;
+        width:100%;
+        min-width:0;
+        padding:16px 18px;
+      }
+      .time{font-size:52px}
+      .grid{grid-template-columns:1fr; grid-auto-rows:auto}
+      .summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .studioCard{
+        height:auto;
+        min-height:auto;
+        padding:20px;
+      }
+      .statusText,
+      .eventName,
+      .teacher,
+      .comment,
+      .nextBox{
+        display:block;
+        overflow:visible;
+        -webkit-line-clamp:unset;
+      }
+      .eventTime,
+      .weekEventTime,
+      .message{
+        white-space:normal;
+      }
+      .weekEventTitle,
+      .weekEventMeta{
+        display:block;
+        overflow:visible;
+        -webkit-line-clamp:unset;
+      }
       .footer{flex-direction:column}
-      .cardTop{align-items:flex-start}
-      .room{font-size:34px}
-      .statusText{font-size:27px}
+      .badge{
+        font-size:12px;
+        padding:0 10px;
+      }
     }
 
-    body.tv{padding:26px}
-    body.tv .page{max-width:1800px}
-    body.tv .summary{display:none}
-    body.tv .grid{grid-template-columns:repeat(4,1fr); gap:18px}
-    body.tv .studioCard{min-height:330px; padding:22px}
+    body.tv{
+      padding:28px;
+    }
+
+    body.tv .page{max-width:1840px}
+    body.tv .hero{margin-bottom:18px}
+    body.tv .grid{grid-template-columns:repeat(4,minmax(0,1fr)); grid-auto-rows:var(--auto-card-height); gap:20px}
+    body.tv .studioCard{height:100%; min-height:0; padding:var(--auto-card-padding)}
     body.tv .room{font-size:46px}
     body.tv .statusText{font-size:36px}
-    body.tv .eventName{font-size:21px}
-    body.tv .headlineTitle{font-size:30px}
+    body.tv .eventName{font-size:20px}
+    body.tv .summaryValue{font-size:32px}
     body.tv .titleBlock p{display:none}
-    body.tv .footer{font-size:15px}
+    body.tv .clockBox{min-width:280px; padding:20px 28px}
+    body.tv .time{font-size:78px}
+    body.tv .date{font-size:18px}
+
+    @media (min-width:1201px) and (max-height:860px){
+      body{padding:16px}
+      .page{max-width:1380px}
+      .hero{margin-bottom:14px}
+      .summary{margin-bottom:14px}
+      .studioCard{height:100%; min-height:0; padding:var(--auto-card-padding)}
+      .room{font-size:34px}
+      .statusText{font-size:26px}
+      .eventName{font-size:16px}
+      .mainStatus{margin-top:16px}
+      .message{margin-top:5px; min-height:18px}
+      .eventBox{margin-top:10px; padding:12px}
+      .eventTime{margin-bottom:6px}
+      .teacher,.comment{margin-top:5px; -webkit-line-clamp:1}
+      .nextBox{margin-top:auto; padding-top:10px; line-height:1.34; -webkit-line-clamp:4}
+      .footer{margin-top:14px}
+    }
+
+    @media (min-width:1201px) and (max-height:860px){
+      body.tv{padding:18px}
+      body.tv .page{max-width:1500px}
+      body.tv .hero{margin-bottom:12px}
+      body.tv .summary{margin-bottom:12px}
+      body.tv .studioCard{height:100%; min-height:0; padding:var(--auto-card-padding)}
+      body.tv .room{font-size:40px}
+      body.tv .statusText{font-size:30px}
+      body.tv .eventName{font-size:18px}
+      body.tv .clockBox{padding:16px 24px}
+      body.tv .time{font-size:68px}
+    }
 
     @media (max-width:1200px){
-      body.tv .grid{grid-template-columns:repeat(2,1fr)}
+      body.tv .grid{grid-template-columns:repeat(2,minmax(0,1fr)); grid-auto-rows:auto}
+      body.tv .studioCard{height:auto; min-height:320px}
     }
   </style>
 </head>
 
 <body>
+  <div class="viewControls" aria-label="Переключение режима отображения">
+    <button class="viewBtn" id="tvToggle" type="button">ТВ-режим</button>
+    <button class="viewBtn" id="screenToggle" type="button">Мероприятия</button>
+  </div>
+
   <div class="page">
     <header class="hero">
       <div class="brand">
-        <div class="logoBox">
-          <img src="ipam-logo.png" alt="Первая Академия Медиа">
+        <div class="logoBox" id="logoBox">
+          <img src="ipam-logo.png" alt="Первая Академия Медиа" onerror="document.getElementById('logoBox').classList.add('logoError')">
+          <div class="logoFallback">Первая Академия Медиа</div>
         </div>
 
         <div class="titleBlock">
@@ -495,21 +748,6 @@
       </div>
     </header>
 
-    <section class="headline">
-      <div class="headlineMain">
-        <span class="headlineDot" id="headlineDot"></span>
-        <div>
-          <div class="headlineTitle" id="headlineTitle">Загружаем данные...</div>
-          <div class="headlineSub" id="headlineSub">Проверяем подключение к расписанию</div>
-        </div>
-      </div>
-
-      <div class="refreshPill">
-        <span class="refreshSpin"></span>
-        <span id="refreshText">Обновление через: —</span>
-      </div>
-    </section>
-
     <section class="summary">
       <div class="summaryCard">
         <div class="summaryLabel">Свободно</div>
@@ -520,7 +758,7 @@
         <div class="summaryValue" id="busyCount">0</div>
       </div>
       <div class="summaryCard">
-        <div class="summaryLabel">Скоро занято</div>
+        <div class="summaryLabel">Скоро заняты</div>
         <div class="summaryValue" id="soonCount">0</div>
       </div>
       <div class="summaryCard">
@@ -558,39 +796,48 @@
     const studiosGrid = document.getElementById("studiosGrid");
     const apiStatus = document.getElementById("apiStatus");
     const updatedAtEl = document.getElementById("updatedAt");
-
     const pageTitle = document.getElementById("pageTitle");
     const pageSubtitle = document.getElementById("pageSubtitle");
-
-    const freeCountEl = document.getElementById("freeCount");
-    const busyCountEl = document.getElementById("busyCount");
-    const soonCountEl = document.getElementById("soonCount");
-    const totalCountEl = document.getElementById("totalCount");
 
     let currentView = params.get("view") === "events" ? "events" : "studios";
     let studiosData = null;
     let eventsData = null;
     let rotationTimer = null;
+    let fitTimer = null;
+
+    function safeLocalStorageGet(key){
+      try { return localStorage.getItem(key); } catch(e) { return null; }
+    }
+
+    function safeLocalStorageSet(key, value){
+      try { localStorage.setItem(key, value); } catch(e) {}
+    }
 
     function setTvMode(enabled, save = true){
       document.body.classList.toggle("tv", enabled);
-      tvToggle.classList.toggle("active", enabled);
-      tvToggle.textContent = enabled ? "Обычный режим" : "ТВ-режим";
-      if (save) localStorage.setItem("ipamTabloTvMode", enabled ? "1" : "0");
-      scheduleFit();
+      if (tvToggle) {
+        tvToggle.classList.toggle("active", enabled);
+        tvToggle.textContent = enabled ? "Обычный режим" : "ТВ-режим";
+      }
+      if (save) safeLocalStorageSet("ipamTabloTvMode", enabled ? "1" : "0");
+      scheduleFitStable();
     }
 
-    const savedTvMode = localStorage.getItem("ipamTabloTvMode") === "1";
+    const savedTvMode = safeLocalStorageGet("ipamTabloTvMode") === "1";
     const urlTvMode = params.get("tv") === "1";
     setTvMode(urlTvMode || savedTvMode, false);
 
-    tvToggle.addEventListener("click", () => {
-      setTvMode(!document.body.classList.contains("tv"));
-    });
+    if (tvToggle) {
+      tvToggle.addEventListener("click", () => {
+        setTvMode(!document.body.classList.contains("tv"));
+      });
+    }
 
-    screenToggle.addEventListener("click", () => {
-      setView(currentView === "studios" ? "events" : "studios", true);
-    });
+    if (screenToggle) {
+      screenToggle.addEventListener("click", () => {
+        setView(currentView === "studios" ? "events" : "studios", true);
+      });
+    }
 
     function escapeHtml(str){
       return String(str || "")
@@ -683,8 +930,10 @@
       return 4;
     }
 
-    function scheduleFit(){
+    function scheduleFitStable(){
+      clearTimeout(fitTimer);
       window.requestAnimationFrame(fitCardsToViewport);
+      fitTimer = setTimeout(fitCardsToViewport, 80);
     }
 
     function fitCardsToViewport(){
@@ -698,7 +947,7 @@
         return;
       }
 
-      const cardsCount = studiosGrid.querySelectorAll(".dashboardCard").length;
+      const cardsCount = studiosGrid.querySelectorAll(".studioCard").length;
       if (!cardsCount) return;
 
       const columns = getDesktopColumns();
@@ -741,7 +990,7 @@
       const mainMessage = studio.message || statusText;
 
       return `
-        <article class="studioCard dashboardCard ${escapeHtml(cls)}">
+        <article class="studioCard ${escapeHtml(cls)}">
           <div class="cardTop">
             <div class="room">${escapeHtml(studio.room || "Студия")}</div>
             <div class="badge">
@@ -771,6 +1020,16 @@
       });
     }
 
+    function setSummaryCards(items){
+      const cards = document.querySelectorAll(".summaryCard");
+      cards.forEach((card, i) => {
+        const label = card.querySelector(".summaryLabel");
+        const value = card.querySelector(".summaryValue");
+        if (label) label.textContent = items[i] ? items[i].label : "—";
+        if (value) value.textContent = items[i] ? items[i].value : "0";
+      });
+    }
+
     function renderStudios(data){
       const studios = Array.isArray(data && data.studios) ? data.studios : [];
       const sorted = sortStudios(studios);
@@ -782,224 +1041,187 @@
       pageTitle.textContent = "Табло студий";
       pageSubtitle.textContent = "Занятость аудиторий и студий в реальном времени";
 
-      freeCountEl.textContent = free;
-      busyCountEl.textContent = busy;
-      soonCountEl.textContent = soon;
-      totalCountEl.textContent = studios.length;
-
-      document.querySelectorAll(".summaryLabel")[0].textContent = "Свободно";
-      document.querySelectorAll(".summaryLabel")[1].textContent = "Занято";
-      document.querySelectorAll(".summaryLabel")[2].textContent = "Скоро заняты";
-      document.querySelectorAll(".summaryLabel")[3].textContent = "Всего студий";
+      setSummaryCards([
+        { label: "Свободно", value: free },
+        { label: "Занято", value: busy },
+        { label: "Скоро заняты", value: soon },
+        { label: "Всего студий", value: studios.length }
+      ]);
 
       studiosGrid.innerHTML = sorted.length
         ? sorted.map(renderStudio).join("")
         : `<div class="loading">Нет данных по студиям</div>`;
 
       apiStatus.classList.remove("error");
-      apiStatus.querySelector("span:last-child").textContent = "API студий подключён";
-      updatedAtEl.textContent = `Последнее обновление: ${escapeHtml(data.currentTime || "—")}`;
-
-      scheduleFit();
-      scheduleFitAfterPaint();
+      apiStatus.querySelector("span:last-child").textContent = "API подключён";
+      updatedAtEl.textContent = `Последнее обновление: ${escapeHtml(data && data.currentTime || "—")}`;
+      scheduleFitStable();
     }
 
-    function eventTimeRange(event){
-      const start = event.start || "";
-      const end = event.end || "";
-      if (start && end) return `${start}–${end}`;
-      return start || end || "Время уточняется";
+    function eventCountForDay(day){
+      return Array.isArray(day && day.events) ? day.events.length : 0;
     }
 
-    function renderEventItem(event){
-      const place = event.place ? `<div class="eventItemPlace">Место: ${escapeHtml(event.place)}</div>` : "";
-      const person = event.person ? `<div class="eventItemPerson">Ответственный: ${escapeHtml(event.person)}</div>` : "";
-      const comment = event.comment ? `<div class="eventItemComment">${escapeHtml(event.comment)}</div>` : "";
+    function renderWeekEvent(event){
+      const time = `${escapeHtml(event.start || "—")}–${escapeHtml(event.end || "—")}`;
+      const place = event.place ? `Место: ${escapeHtml(event.place)}` : "";
+      const person = event.person ? `Ответственный: ${escapeHtml(event.person)}` : "";
+      const comment = event.comment ? `Комментарий: ${escapeHtml(event.comment)}` : "";
+      const meta = [place, person, comment].filter(Boolean).join(" · ");
 
       return `
-        <div class="eventItem">
-          <div class="eventItemTime">${escapeHtml(eventTimeRange(event))}</div>
-          <div class="eventItemTitle">${escapeHtml(event.title || "Мероприятие")}</div>
-          ${place}
-          ${person}
-          ${comment}
+        <div class="weekEvent">
+          <div class="weekEventTime">${time}</div>
+          <div class="weekEventTitle">${escapeHtml(event.title || "Мероприятие")}</div>
+          ${meta ? `<div class="weekEventMeta">${meta}</div>` : ""}
         </div>
       `;
     }
 
     function renderEventDay(day){
       const events = Array.isArray(day.events) ? day.events : [];
-      const eventsHtml = events.length
-        ? `<div class="eventsList">${events.slice(0, 3).map(renderEventItem).join("")}</div>`
-        : `<div class="eventEmpty">Мероприятий на этот день нет</div>`;
-
-      const more = events.length > 3
-        ? `<div class="eventEmpty">Еще мероприятий: ${events.length - 3}</div>`
-        : "";
+      const hasEvents = events.length > 0;
+      const badgeText = hasEvents ? `${events.length} ${events.length === 1 ? "событие" : "событий"}` : "Нет событий";
 
       return `
-        <article class="studioCard dashboardCard eventDayCard">
+        <article class="studioCard eventDayCard ${hasEvents ? "" : "empty"}">
           <div class="cardTop">
             <div>
               <div class="room">${escapeHtml(day.label || day.weekday || "День")}</div>
-              <div class="dayMeta">${escapeHtml(day.date || "")}</div>
+              <div class="dayDate">${escapeHtml(day.date || "")}</div>
             </div>
             <div class="badge">
               <span class="dot"></span>
-              ${events.length ? `${events.length} событ.` : "Пусто"}
+              ${escapeHtml(badgeText)}
             </div>
           </div>
 
-          <div class="dayStatus">
-            <div class="dayTitle">${escapeHtml(day.weekday || day.label || "День")}</div>
-            <div class="daySubtitle">${events.length ? "Расписание мероприятий" : "Свободный день"}</div>
-          </div>
-
-          ${eventsHtml}
-          ${more}
+          ${hasEvents
+            ? `<div class="eventList">${events.map(renderWeekEvent).join("")}</div>`
+            : `<div class="emptyDayText">На этот день мероприятий нет</div>`
+          }
         </article>
       `;
     }
 
     function renderEvents(data){
       const days = Array.isArray(data && data.days) ? data.days : [];
-      const totalEvents = days.reduce((sum, day) => sum + (Array.isArray(day.events) ? day.events.length : 0), 0);
-      const activeDays = days.filter(day => Array.isArray(day.events) && day.events.length).length;
-      const todayEvents = days[0] && Array.isArray(days[0].events) ? days[0].events.length : 0;
+      const totalEvents = days.reduce((sum, day) => sum + eventCountForDay(day), 0);
+      const todayEvents = eventCountForDay(days[0]);
+      const tomorrowEvents = eventCountForDay(days[1]);
+      const daysWithEvents = days.filter(day => eventCountForDay(day) > 0).length;
 
-      pageTitle.textContent = data.title || "Мероприятия недели";
-      pageSubtitle.textContent = "Ближайшие события, занятия и мероприятия на 7 дней";
+      pageTitle.textContent = (data && data.title) || "Мероприятия недели";
+      pageSubtitle.textContent = "Ближайшие события и активности на 7 дней";
 
-      document.querySelectorAll(".summaryLabel")[0].textContent = "Дней в афише";
-      document.querySelectorAll(".summaryLabel")[1].textContent = "Всего событий";
-      document.querySelectorAll(".summaryLabel")[2].textContent = "Сегодня";
-      document.querySelectorAll(".summaryLabel")[3].textContent = "Дней с событиями";
-
-      freeCountEl.textContent = days.length;
-      busyCountEl.textContent = totalEvents;
-      soonCountEl.textContent = todayEvents;
-      totalCountEl.textContent = activeDays;
+      setSummaryCards([
+        { label: "Сегодня", value: todayEvents },
+        { label: "Завтра", value: tomorrowEvents },
+        { label: "Дней с событиями", value: daysWithEvents },
+        { label: "Всего событий", value: totalEvents }
+      ]);
 
       studiosGrid.innerHTML = days.length
         ? days.map(renderEventDay).join("")
-        : `<div class="loading">Мероприятия не найдены</div>`;
+        : `<div class="loading">Нет данных по мероприятиям</div>`;
 
-      apiStatus.classList.remove("error");
-      apiStatus.querySelector("span:last-child").textContent = "API мероприятий подключён";
-      updatedAtEl.textContent = `Последнее обновление: ${escapeHtml(data.currentTime || "—")}`;
+      if (data && data.ok === false) {
+        apiStatus.classList.add("error");
+        apiStatus.querySelector("span:last-child").textContent = "Ошибка API мероприятий";
+        updatedAtEl.textContent = escapeHtml(data.message || "Ошибка загрузки мероприятий");
+      } else {
+        apiStatus.classList.remove("error");
+        apiStatus.querySelector("span:last-child").textContent = "API подключён";
+        updatedAtEl.textContent = `Последнее обновление: ${escapeHtml(data && data.currentTime || "—")}`;
+      }
 
-      scheduleFit();
-      scheduleFitAfterPaint();
+      scheduleFitStable();
+    }
+
+    function renderCurrentView(){
+      if (currentView === "events") {
+        renderEvents(eventsData || { ok:true, title:"Мероприятия недели", days:[] });
+      } else {
+        renderStudios(studiosData || { ok:true, currentTime:"—", studios:[] });
+      }
+    }
+
+    function scheduleRotation(){
+      clearTimeout(rotationTimer);
+      const delay = currentView === "studios" ? STUDIOS_SCREEN_MS : EVENTS_SCREEN_MS;
+      rotationTimer = setTimeout(() => {
+        setView(currentView === "studios" ? "events" : "studios", false);
+      }, delay);
     }
 
     function setView(view, manual = false){
       currentView = view === "events" ? "events" : "studios";
       document.body.classList.toggle("eventsView", currentView === "events");
-      screenToggle.classList.toggle("active", currentView === "events");
-      screenToggle.textContent = currentView === "events" ? "Студии" : "Мероприятия";
 
-      if (currentView === "events") {
-        if (eventsData) renderEvents(eventsData);
-        else {
-          pageTitle.textContent = "Мероприятия недели";
-          pageSubtitle.textContent = "Загружаем события из таблицы";
-          studiosGrid.innerHTML = `<div class="loading">Загружаем мероприятия...</div>`;
-          loadEvents();
-        }
-      } else {
-        if (studiosData) renderStudios(studiosData);
-        else {
-          pageTitle.textContent = "Табло студий";
-          pageSubtitle.textContent = "Загружаем занятость аудиторий";
-          studiosGrid.innerHTML = `<div class="loading">Загружаем табло студий...</div>`;
-          loadStudios();
-        }
+      if (screenToggle) {
+        screenToggle.classList.toggle("active", currentView === "events");
+        screenToggle.textContent = currentView === "events" ? "Студии" : "Мероприятия";
       }
 
-      if (manual) restartRotation();
+      renderCurrentView();
+      scheduleRotation();
     }
 
-    function scheduleFitAfterPaint(){
-      setTimeout(scheduleFit, 80);
-      setTimeout(scheduleFit, 250);
-      setTimeout(scheduleFit, 700);
+    async function loadStudiosData(){
+      const res = await fetch(STUDIOS_API_URL, { cache: "no-store" });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.message || "Ошибка API студий");
+      studiosData = data;
+      if (currentView === "studios") renderStudios(data);
+      return data;
     }
 
-    async function loadStudios(){
-      try{
-        const res = await fetch(STUDIOS_API_URL, { cache: "no-store" });
-        const data = await res.json();
-
-        if (!data.ok) {
-          throw new Error(data.message || "Ошибка API студий");
-        }
-
-        studiosData = data;
-        if (currentView === "studios") renderStudios(data);
-      } catch(err){
-        if (currentView === "studios") {
-          apiStatus.classList.add("error");
-          apiStatus.querySelector("span:last-child").textContent = "Ошибка подключения API студий";
-          updatedAtEl.textContent = err.message || "Ошибка загрузки";
-        }
-      }
-    }
-
-    async function loadEvents(){
-      try{
+    async function loadEventsData(){
+      try {
         const res = await fetch(EVENTS_API_URL, { cache: "no-store" });
         const data = await res.json();
-
-        if (!data.ok) {
-          throw new Error(data.message || "Ошибка API мероприятий");
-        }
-
         eventsData = data;
         if (currentView === "events") renderEvents(data);
-      } catch(err){
-        if (currentView === "events") {
-          apiStatus.classList.add("error");
-          apiStatus.querySelector("span:last-child").textContent = "Ошибка подключения API мероприятий";
-          updatedAtEl.textContent = err.message || "Ошибка загрузки";
-        }
+        return data;
+      } catch(err) {
+        eventsData = {
+          ok: false,
+          title: "Мероприятия недели",
+          currentTime: "—",
+          days: [],
+          message: err.message || "Ошибка загрузки мероприятий"
+        };
+        if (currentView === "events") renderEvents(eventsData);
+        return eventsData;
       }
     }
 
-    function loadAllData(){
-      loadStudios();
-      loadEvents();
-    }
+    async function loadAllData(){
+      const results = await Promise.allSettled([loadStudiosData(), loadEventsData()]);
+      const studiosResult = results[0];
 
-    function restartRotation(){
-      if (rotationTimer) clearTimeout(rotationTimer);
-
-      const delay = currentView === "studios" ? STUDIOS_SCREEN_MS : EVENTS_SCREEN_MS;
-      rotationTimer = setTimeout(() => {
-        setView(currentView === "studios" ? "events" : "studios", false);
-        restartRotation();
-      }, delay);
+      if (studiosResult.status === "rejected" && currentView === "studios") {
+        apiStatus.classList.add("error");
+        apiStatus.querySelector("span:last-child").textContent = "Ошибка подключения API";
+        updatedAtEl.textContent = studiosResult.reason && studiosResult.reason.message ? studiosResult.reason.message : "Ошибка загрузки";
+      }
     }
 
     updateLocalClock();
     setInterval(updateLocalClock, 1000);
 
-    loadAllData();
     setView(currentView, false);
-    restartRotation();
+    loadAllData();
 
-    window.addEventListener("resize", scheduleFit);
-    window.addEventListener("orientationchange", scheduleFit);
-    window.addEventListener("load", scheduleFitAfterPaint);
-
-    const logoImg = document.querySelector(".logoBox img");
-    if (logoImg) {
-      logoImg.addEventListener("load", scheduleFitAfterPaint);
-      logoImg.addEventListener("error", scheduleFitAfterPaint);
-    }
-
+    window.addEventListener("resize", scheduleFitStable);
+    window.addEventListener("orientationchange", scheduleFitStable);
     if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(scheduleFitAfterPaint);
+      document.fonts.ready.then(scheduleFitStable);
     }
+
+    setTimeout(scheduleFitStable, 80);
+    setTimeout(scheduleFitStable, 250);
+    setTimeout(scheduleFitStable, 700);
 
     setInterval(loadAllData, REFRESH_MS);
   </script>
