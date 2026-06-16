@@ -515,6 +515,11 @@
     .eventDayCard .dot{background:var(--blue); box-shadow:0 0 16px rgba(59,130,246,.55)}
     .eventDayCard.empty .dot{background:var(--gray); box-shadow:0 0 12px rgba(148,163,184,.35)}
 
+    .eventDayCard .room{
+      letter-spacing:-.012em;
+      line-height:.98;
+    }
+
     .dayDate{
       color:var(--muted);
       font-size:15px;
@@ -1062,6 +1067,54 @@
       return Array.isArray(day && day.events) ? day.events.length : 0;
     }
 
+    function parseRuDateString(dateStr){
+      const m = String(dateStr || "").trim().match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+      if (!m) return null;
+      return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+    }
+
+    function formatShortWeekday(weekday){
+      const map = {
+        "Понедельник": "ПН",
+        "Вторник": "ВТ",
+        "Среда": "СР",
+        "Четверг": "ЧТ",
+        "Пятница": "ПТ",
+        "Суббота": "СБ",
+        "Воскресенье": "ВС"
+      };
+      return map[String(weekday || "").trim()] || String(weekday || "").trim();
+    }
+
+    function formatEventDayTitle(day){
+      const label = String(day && day.label || "").trim();
+      if (label === "Сегодня" || label === "Завтра") return label;
+
+      const dateObj = parseRuDateString(day && day.date);
+      if (!dateObj) return formatShortWeekday(day && day.weekday || label || "День");
+
+      const months = [
+        "января", "февраля", "марта", "апреля", "мая", "июня",
+        "июля", "августа", "сентября", "октября", "ноября", "декабря"
+      ];
+
+      return `${formatShortWeekday(day && day.weekday)} ${dateObj.getDate()} ${months[dateObj.getMonth()]}`;
+    }
+
+    function formatEventDaySubTitle(day){
+      const label = String(day && day.label || "").trim();
+      const dateObj = parseRuDateString(day && day.date);
+      if (!dateObj) return String(day && day.date || "");
+
+      if (label === "Сегодня" || label === "Завтра") {
+        const dd = String(dateObj.getDate()).padStart(2, "0");
+        const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
+        return `${dd}.${mm}.${dateObj.getFullYear()}`;
+      }
+
+      return "";
+    }
+
     function renderWeekEvent(event){
       const time = `${escapeHtml(event.start || "—")}–${escapeHtml(event.end || "—")}`;
       const place = event.place ? `Место: ${escapeHtml(event.place)}` : "";
@@ -1082,13 +1135,15 @@
       const events = Array.isArray(day.events) ? day.events : [];
       const hasEvents = events.length > 0;
       const badgeText = hasEvents ? `${events.length} ${events.length === 1 ? "событие" : "событий"}` : "Нет событий";
+      const title = formatEventDayTitle(day);
+      const subTitle = formatEventDaySubTitle(day);
 
       return `
         <article class="studioCard eventDayCard ${hasEvents ? "" : "empty"}">
           <div class="cardTop">
             <div>
-              <div class="room">${escapeHtml(day.label || day.weekday || "День")}</div>
-              <div class="dayDate">${escapeHtml(day.date || "")}</div>
+              <div class="room">${escapeHtml(title || "День")}</div>
+              ${subTitle ? `<div class="dayDate">${escapeHtml(subTitle)}</div>` : ""}
             </div>
             <div class="badge">
               <span class="dot"></span>
