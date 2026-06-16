@@ -70,6 +70,77 @@
       width:100%;
       max-width:1460px;
       margin:0 auto;
+      position:relative;
+      transition:
+        opacity .34s ease,
+        transform .34s ease,
+        filter .34s ease;
+      will-change:opacity, transform, filter;
+    }
+
+    body.screenSwitchOut .page{
+      opacity:0;
+      transform:translateY(10px) scale(.992);
+      filter:blur(2px);
+    }
+
+    body.screenSwitchIn .page{
+      animation:screenReveal .58s cubic-bezier(.22,1,.36,1) both;
+    }
+
+    body::after{
+      content:"";
+      position:fixed;
+      inset:-18%;
+      z-index:45;
+      pointer-events:none;
+      opacity:0;
+      background:
+        linear-gradient(
+          110deg,
+          transparent 32%,
+          rgba(255,255,255,.04) 40%,
+          rgba(255,255,255,.24) 48%,
+          rgba(59,130,246,.15) 53%,
+          transparent 64%
+        );
+      transform:translateX(-130%) skewX(-12deg);
+    }
+
+    body.screenShine::after{
+      animation:shinePass .9s cubic-bezier(.22,1,.36,1) both;
+    }
+
+    @keyframes screenReveal{
+      0%{
+        opacity:0;
+        transform:translateY(10px) scale(.992);
+        filter:blur(2px);
+      }
+      100%{
+        opacity:1;
+        transform:translateY(0) scale(1);
+        filter:blur(0);
+      }
+    }
+
+    @keyframes shinePass{
+      0%{
+        opacity:0;
+        transform:translateX(-130%) skewX(-12deg);
+      }
+      18%{opacity:.55}
+      58%{opacity:.38}
+      100%{
+        opacity:0;
+        transform:translateX(130%) skewX(-12deg);
+      }
+    }
+
+    @media (prefers-reduced-motion:reduce){
+      .page{transition:none}
+      body.screenSwitchIn .page{animation:none}
+      body.screenShine::after{animation:none}
     }
 
     .hero{
@@ -818,6 +889,7 @@
     let eventsData = null;
     let rotationTimer = null;
     let fitTimer = null;
+    let viewTransitionBusy = false;
 
     function safeLocalStorageGet(key){
       try { return localStorage.getItem(key); } catch(e) { return null; }
@@ -1173,7 +1245,7 @@
       const daysWithEvents = days.filter(day => eventCountForDay(day) > 0).length;
 
       pageTitle.textContent = (data && data.title) || "Мероприятия недели";
-      pageSubtitle.textContent = "Ближайшие события и активности на 7 дней";
+      pageSubtitle.textContent = "Ближайшие события и активности на 8 дней";
 
       setSummaryCards([
         { label: "Сегодня", value: todayEvents },
@@ -1215,7 +1287,7 @@
       }, delay);
     }
 
-    function setView(view, manual = false){
+    function applyView(view){
       currentView = view === "events" ? "events" : "studios";
       document.body.classList.toggle("eventsView", currentView === "events");
 
@@ -1225,7 +1297,42 @@
       }
 
       renderCurrentView();
-      scheduleRotation();
+    }
+
+    function setView(view, manual = false, instant = false){
+      const nextView = view === "events" ? "events" : "studios";
+
+      if (viewTransitionBusy) return;
+
+      clearTimeout(rotationTimer);
+
+      if (instant) {
+        applyView(nextView);
+        scheduleRotation();
+        return;
+      }
+
+      if (nextView === currentView && manual) {
+        scheduleRotation();
+        return;
+      }
+
+      viewTransitionBusy = true;
+      document.body.classList.remove("screenSwitchIn");
+      document.body.classList.add("screenSwitchOut", "screenShine");
+
+      window.setTimeout(() => {
+        applyView(nextView);
+
+        document.body.classList.remove("screenSwitchOut");
+        document.body.classList.add("screenSwitchIn");
+
+        window.setTimeout(() => {
+          document.body.classList.remove("screenSwitchIn", "screenShine");
+          viewTransitionBusy = false;
+          scheduleRotation();
+        }, 680);
+      }, 260);
     }
 
     async function loadStudiosData(){
@@ -1271,7 +1378,7 @@
     updateLocalClock();
     setInterval(updateLocalClock, 1000);
 
-    setView(currentView, false);
+    setView(currentView, false, true);
     loadAllData();
 
     window.addEventListener("resize", scheduleFitStable);
