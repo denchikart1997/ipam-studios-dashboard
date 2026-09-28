@@ -1049,11 +1049,13 @@
 
   <script>
     const BASE_API_URL = "https://script.google.com/macros/s/AKfycbxWe2wpLDw1VBY0tY7N-q28iL275sLONLrVo0qlbV_twDlJhB9NSoPmvZT5vUFs6K-CAA/exec";
-    const STUDIOS_API_URL = `${BASE_API_URL}?action=getStudiosStatus`;
-    const EVENTS_API_URL = `${BASE_API_URL}?action=getWeeklyEvents`;
-    const DUTY_API_URL = `${BASE_API_URL}?action=getDutyStatus`;
+    // Один запрос вместо трёх (студии + мероприятия + дежурный за одно выполнение
+    // скрипта) — сильно снижает нагрузку на квоту одновременных выполнений Apps Script,
+    // особенно когда табло открыто на нескольких экранах сразу.
+    const ALL_API_URL = `${BASE_API_URL}?action=getAll`;
 
     const REFRESH_MS = 30000;
+    const RETRY_AFTER_FAIL_MS = 5000; // быстрый повтор, если самая первая загрузка не удалась
     const STUDIOS_SCREEN_MS = 60000;
     const EVENTS_SCREEN_MS = 60000;
 
@@ -1070,6 +1072,8 @@
     let currentView = params.get("view") === "events" ? "events" : "studios";
     let studiosData = null;
     let eventsData = null;
+    let lastGoodDutyData = null;
+    let hasLoadedOnce = false;
     let rotationTimer = null;
     let fitTimer = null;
     let viewTransitionBusy = false;
@@ -1311,17 +1315,6 @@
       card.className = "dutyCard none";
       badgeText.textContent = "Дежурный технический специалист";
       peopleBox.innerHTML = `<div class="dutyEmpty">Сейчас никто не дежурит, ближайших смен не найдено</div>`;
-    }
-
-    async function loadDutyData(){
-      try {
-        const res = await fetch(DUTY_API_URL, { cache: "no-store" });
-        const data = await res.json();
-        renderDuty(data);
-        return data;
-      } catch(err) {
-        renderDuty({ ok:false, message: err.message || "Ошибка загрузки дежурного" });
-      }
     }
 
     function renderStudio(studio){
@@ -1593,43 +1586,54 @@
       }, 230);
     }
 
-    async function loadStudiosData(){
-      const res = await fetch(STUDIOS_API_URL, { cache: "no-store" });
-      const data = await res.json();
-      if (!data.ok) throw new Error(data.message || "Ошибка API студий");
-      studiosData = data;
-      if (currentView === "studios") renderStudios(data);
-      return data;
-    }
-
-    async function loadEventsData(){
-      try {
-        const res = await fetch(EVENTS_API_URL, { cache: "no-store" });
-        const data = await res.json();
-        eventsData = data;
-        if (currentView === "events") renderEvents(data);
-        return data;
-      } catch(err) {
-        eventsData = {
-          ok: false,
-          title: "Мероприятия недели",
-          currentTime: "—",
-          days: [],
-          message: err.message || "Ошибка загрузки мероприятий"
-        };
-        if (currentView === "events") renderEvents(eventsData);
-        return eventsData;
-      }
-    }
-
+    // Единая загрузка: один fetch вместо трёх. Если запрос не удался (сеть,
+    // таймаут, Apps Script вернул не-JSON при перегрузке квоты) — НЕ затираем
+    // то, что уже показано на экране, а просто помечаем строку статуса как
+    // ошибочную и ждём следующего цикла. Так табло не "гаснет" на секунду сбоя.
     async function loadAllData(){
-      const results = await Promise.allSettled([loadStudiosData(), loadEventsData(), loadDutyData()]);
-      const studiosResult = results[0];
+      try {
+        const res = await fetch(ALL_API_URL, { cache: "no-store" });
+        const data = await res.json();
 
-      if (studiosResult.status === "rejected" && currentView === "studios") {
+        if (data && data.studios && data.studios.ok) {
+          studiosData = data.studios;
+          if (currentView === "studios") renderStudios(studiosData);
+        }
+
+        if (data && data.events) {
+          eventsData = data.events;
+          if (currentView === "events") renderEvents(eventsData);
+        }
+
+        if (data && data.duty) {
+          if (data.duty.ok) lastGoodDutyData = data.duty;
+          renderDuty(data.duty.ok ? data.duty : (lastGoodDutyData || data.duty));
+        }
+
+        const anyOk = data && ((data.studios && data.studios.ok) || (data.events && data.events.ok !== false));
+        if (anyOk) {
+          apiStatus.classList.remove("error");
+          apiStatus.querySelector("span:last-child").textContent = "API подключён";
+          const time = (data.studios && data.studios.currentTime) || (data.events && data.events.currentTime) || "—";
+          updatedAtEl.textContent = `Последнее обновление: ${escapeHtml(time)}`;
+        } else {
+          apiStatus.classList.add("error");
+          apiStatus.querySelector("span:last-child").textContent = "Ошибка подключения API";
+        }
+
+        hasLoadedOnce = true;
+      } catch(err) {
+        // Сеть/парсинг подвели — оставляем на экране прежние данные, только
+        // помечаем статус ошибкой. Если это самая первая загрузка страницы
+        // (данных ещё нет вообще) — пробуем ещё раз быстро, не дожидаясь
+        // обычного 30-секундного цикла.
         apiStatus.classList.add("error");
         apiStatus.querySelector("span:last-child").textContent = "Ошибка подключения API";
-        updatedAtEl.textContent = studiosResult.reason && studiosResult.reason.message ? studiosResult.reason.message : "Ошибка загрузки";
+        updatedAtEl.textContent = err && err.message ? err.message : "Ошибка загрузки";
+
+        if (!hasLoadedOnce) {
+          setTimeout(loadAllData, RETRY_AFTER_FAIL_MS);
+        }
       }
     }
 
@@ -1649,7 +1653,16 @@
     setTimeout(scheduleFitStable, 250);
     setTimeout(scheduleFitStable, 700);
 
-    setInterval(loadAllData, REFRESH_MS);
+    // Небольшой случайный разброс (±4с) вокруг интервала обновления, чтобы
+    // несколько одновременно открытых экранов табло не долбили API в одну
+    // и ту же секунду каждые 30 секунд, а размазывались по времени.
+    function scheduleNextLoad(){
+      const jitter = Math.floor(Math.random() * 8000) - 4000;
+      setTimeout(() => {
+        loadAllData().finally(scheduleNextLoad);
+      }, Math.max(10000, REFRESH_MS + jitter));
+    }
+    scheduleNextLoad();
   </script>
 </body>
 </html>
