@@ -299,6 +299,139 @@
       line-height:1;
     }
 
+    .dutySection{
+      margin-bottom:18px;
+    }
+
+    .dutyCard{
+      position:relative;
+      overflow:hidden;
+      border-radius:var(--radius);
+      border:1px solid var(--border);
+      background:linear-gradient(180deg, rgba(255,255,255,.078), rgba(255,255,255,.038));
+      box-shadow:var(--shadow);
+      padding:22px 24px;
+    }
+
+    .dutyCard::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      opacity:.16;
+      pointer-events:none;
+      background:radial-gradient(520px 260px at 12% 0%, var(--gray), transparent 65%);
+    }
+
+    .dutyCard.on::before{background:radial-gradient(520px 260px at 12% 0%, var(--green), transparent 65%)}
+    .dutyCard.next::before{background:radial-gradient(520px 260px at 12% 0%, var(--yellow), transparent 65%)}
+    .dutyCard.none::before{background:radial-gradient(520px 260px at 12% 0%, var(--gray), transparent 65%)}
+
+    .dutyCard.on .dot{background:var(--green); box-shadow:0 0 16px rgba(34,197,94,.55)}
+    .dutyCard.next .dot{background:var(--yellow); box-shadow:0 0 16px rgba(245,158,11,.55)}
+    .dutyCard.none .dot{background:var(--gray)}
+
+    .dutyCardTop{
+      position:relative;
+      z-index:1;
+    }
+
+    .dutyBadge{
+      display:inline-flex;
+      align-items:center;
+      gap:9px;
+      font-size:15px;
+      font-weight:760;
+      color:var(--muted);
+      letter-spacing:.01em;
+    }
+
+    .dutyCard.on .dutyBadge{color:var(--text)}
+
+    .dutyPeople{
+      position:relative;
+      z-index:1;
+      margin-top:16px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:14px;
+    }
+
+    .dutyPerson{
+      display:flex;
+      align-items:center;
+      gap:14px;
+      padding:12px 18px;
+      border-radius:16px;
+      background:rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.08);
+      min-width:260px;
+      flex:1 1 260px;
+    }
+
+    .dutyAvatar{
+      width:46px;
+      height:46px;
+      border-radius:50%;
+      flex:0 0 auto;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:18px;
+      font-weight:800;
+      background:rgba(59,130,246,.22);
+      color:#cfe4ff;
+      border:1px solid rgba(59,130,246,.35);
+    }
+
+    .dutyInfo{min-width:0}
+
+    .dutyName{
+      font-size:17px;
+      font-weight:760;
+      line-height:1.25;
+      word-break:break-word;
+    }
+
+    .dutyMeta{
+      margin-top:4px;
+      color:var(--muted);
+      font-size:13.5px;
+      line-height:1.35;
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px 14px;
+    }
+
+    .dutyPhone{
+      color:#cfe4ff;
+      text-decoration:none;
+      font-weight:660;
+    }
+
+    .dutyPhone:hover{text-decoration:underline}
+
+    .dutyEmpty,
+    .dutyLoading{
+      position:relative;
+      z-index:1;
+      margin-top:16px;
+      color:var(--muted);
+      font-size:15px;
+      line-height:1.4;
+    }
+
+    body.fitCompact .dutyCard{padding:18px 20px}
+    body.fitUltra .dutyCard{padding:15px 18px}
+    body.fitUltra .dutyPerson{padding:10px 14px; min-width:220px}
+    body.fitUltra .dutyAvatar{width:38px; height:38px; font-size:15px}
+    body.fitUltra .dutyName{font-size:15px}
+    body.fitUltra .dutyMeta{font-size:12px}
+
+    @media (max-width:640px){
+      .dutyPeople{flex-direction:column}
+      .dutyPerson{min-width:0}
+    }
+
     .grid{
       display:grid;
       grid-template-columns:repeat(4,minmax(0,1fr));
@@ -868,6 +1001,20 @@
       </div>
     </header>
 
+    <section class="dutySection">
+      <div class="dutyCard none" id="dutyCard">
+        <div class="dutyCardTop">
+          <div class="dutyBadge">
+            <span class="dot"></span>
+            <span id="dutyBadgeText">Дежурный технический специалист</span>
+          </div>
+        </div>
+        <div class="dutyPeople" id="dutyPeople">
+          <div class="dutyLoading">Загружаем данные...</div>
+        </div>
+      </div>
+    </section>
+
     <section class="summary">
       <div class="summaryCard">
         <div class="summaryLabel">Свободно</div>
@@ -904,6 +1051,7 @@
     const BASE_API_URL = "https://script.google.com/macros/s/AKfycbxWe2wpLDw1VBY0tY7N-q28iL275sLONLrVo0qlbV_twDlJhB9NSoPmvZT5vUFs6K-CAA/exec";
     const STUDIOS_API_URL = `${BASE_API_URL}?action=getStudiosStatus`;
     const EVENTS_API_URL = `${BASE_API_URL}?action=getWeeklyEvents`;
+    const DUTY_API_URL = `${BASE_API_URL}?action=getDutyStatus`;
 
     const REFRESH_MS = 30000;
     const STUDIOS_SCREEN_MS = 60000;
@@ -1099,6 +1247,81 @@
       document.documentElement.style.setProperty("--auto-card-height", `${cardH}px`);
       document.documentElement.style.setProperty("--auto-card-padding", cardH < 305 ? "18px" : cardH < 330 ? "20px" : "24px");
       document.documentElement.style.setProperty("--auto-grid-gap", `${gap}px`);
+    }
+
+    function initials_(name){
+      const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+      if (!parts.length) return "?";
+      return (parts[0][0] + (parts[1] ? parts[1][0] : "")).toUpperCase();
+    }
+
+    function phoneHref_(phone){
+      return "tel:" + String(phone || "").replace(/[^\d+]/g, "");
+    }
+
+    function dutyPersonHtml_(p){
+      const phone = p.phone
+        ? `<a class="dutyPhone" href="${escapeHtml(phoneHref_(p.phone))}">${escapeHtml(p.phone)}</a>`
+        : "";
+      const time = (p.start && p.end) ? `${escapeHtml(p.start)}–${escapeHtml(p.end)}` : "";
+
+      return `
+        <div class="dutyPerson">
+          <div class="dutyAvatar">${escapeHtml(initials_(p.name))}</div>
+          <div class="dutyInfo">
+            <div class="dutyName">${escapeHtml(p.name)}</div>
+            <div class="dutyMeta">
+              ${phone}
+              ${time ? `<span>${time}</span>` : ""}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderDuty(data){
+      const card = document.getElementById("dutyCard");
+      const badgeText = document.getElementById("dutyBadgeText");
+      const peopleBox = document.getElementById("dutyPeople");
+
+      if (!data || data.ok === false) {
+        card.className = "dutyCard none";
+        badgeText.textContent = "Дежурный технический специалист";
+        peopleBox.innerHTML = `<div class="dutyEmpty">${escapeHtml((data && data.message) || "Нет данных о дежурном")}</div>`;
+        return;
+      }
+
+      const onDuty = Array.isArray(data.onDuty) ? data.onDuty : [];
+      const next = Array.isArray(data.next) ? data.next : [];
+
+      if (onDuty.length) {
+        card.className = "dutyCard on";
+        badgeText.textContent = onDuty.length > 1 ? "Дежурные технические специалисты сейчас" : "Дежурный технический специалист сейчас";
+        peopleBox.innerHTML = onDuty.map(dutyPersonHtml_).join("");
+        return;
+      }
+
+      if (next.length) {
+        card.className = "dutyCard next";
+        badgeText.textContent = "Сейчас никого нет · следующий дежурный";
+        peopleBox.innerHTML = next.map(dutyPersonHtml_).join("");
+        return;
+      }
+
+      card.className = "dutyCard none";
+      badgeText.textContent = "Дежурный технический специалист";
+      peopleBox.innerHTML = `<div class="dutyEmpty">Сейчас никто не дежурит, ближайших смен не найдено</div>`;
+    }
+
+    async function loadDutyData(){
+      try {
+        const res = await fetch(DUTY_API_URL, { cache: "no-store" });
+        const data = await res.json();
+        renderDuty(data);
+        return data;
+      } catch(err) {
+        renderDuty({ ok:false, message: err.message || "Ошибка загрузки дежурного" });
+      }
     }
 
     function renderStudio(studio){
@@ -1400,7 +1623,7 @@
     }
 
     async function loadAllData(){
-      const results = await Promise.allSettled([loadStudiosData(), loadEventsData()]);
+      const results = await Promise.allSettled([loadStudiosData(), loadEventsData(), loadDutyData()]);
       const studiosResult = results[0];
 
       if (studiosResult.status === "rejected" && currentView === "studios") {
