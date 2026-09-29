@@ -1242,7 +1242,11 @@
       let cardH = Math.floor(available / rows);
 
       const maxH = document.body.classList.contains("tv") ? 390 : 370;
-      const minH = columns === 4 ? 285 : 320;
+      // В обычном режиме карточки не сжимаем: при увеличении масштаба страница
+      // прокручивается, а текст (комментарии, преподаватель) не прячется.
+      // Ужатие под один экран остаётся только для ТВ-режима (?tv=1).
+      const isTvMode = document.body.classList.contains("tv");
+      const minH = isTvMode ? (columns === 4 ? 285 : 320) : 340;
       cardH = Math.max(minH, Math.min(maxH, cardH));
 
       if (cardH < 330) document.body.classList.add("fitCompact");
@@ -1586,14 +1590,47 @@
       }, 230);
     }
 
+    // До 3 попыток за один цикл (Apps Script иногда отвечает ошибкой/HTML под
+    // нагрузкой, следующая попытка обычно проходит). Ошибка показывается только
+    // если не удалось ни разу.
+    async function fetchAllWithRetry_(){
+      const delays = [0, 1500, 3500];
+      let lastErr;
+      for (let i = 0; i < delays.length; i++) {
+        if (delays[i]) await new Promise(r => setTimeout(r, delays[i]));
+        try {
+          const ctrl = new AbortController();
+          const t = setTimeout(() => ctrl.abort(), 20000);
+          const res = await fetch(ALL_API_URL, { cache: "no-store", signal: ctrl.signal });
+          clearTimeout(t);
+          const data = await res.json();
+          if (data && (data.studios || data.events)) return data;
+          lastErr = new Error("Пустой ответ API");
+        } catch(e) { lastErr = e; }
+      }
+      throw lastErr;
+    }
+
+    // Показать последние удачные данные сразу при открытии, пока грузится свежее
+    function showCachedData_(){
+      try {
+        const raw = localStorage.getItem("studiosLastGood");
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        if (data.studios && data.studios.ok) { studiosData = data.studios; if (currentView === "studios") renderStudios(studiosData); }
+        if (data.events) { eventsData = data.events; if (currentView === "events") renderEvents(eventsData); }
+        if (data.duty && data.duty.ok) { lastGoodDutyData = data.duty; renderDuty(data.duty); }
+      } catch(e) {}
+    }
+
     // Единая загрузка: один fetch вместо трёх. Если запрос не удался (сеть,
     // таймаут, Apps Script вернул не-JSON при перегрузке квоты) — НЕ затираем
     // то, что уже показано на экране, а просто помечаем строку статуса как
     // ошибочную и ждём следующего цикла. Так табло не "гаснет" на секунду сбоя.
     async function loadAllData(){
       try {
-        const res = await fetch(ALL_API_URL, { cache: "no-store" });
-        const data = await res.json();
+        const data = await fetchAllWithRetry_();
+        try { localStorage.setItem("studiosLastGood", JSON.stringify(data)); } catch(e) {}
 
         if (data && data.studios && data.studios.ok) {
           studiosData = data.studios;
@@ -1641,6 +1678,7 @@
     setInterval(updateLocalClock, 1000);
 
     setView(currentView, false, true);
+    showCachedData_();
     loadAllData();
 
     window.addEventListener("resize", scheduleFitStable);
