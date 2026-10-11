@@ -979,6 +979,8 @@
   <div class="viewControls" aria-label="Переключение режима отображения">
     <button class="viewBtn" id="tvToggle" type="button">ТВ-режим</button>
     <button class="viewBtn" id="screenToggle" type="button">Мероприятия</button>
+    <button class="viewBtn" id="uploadBtn" type="button" hidden>Загрузить расписание</button>
+    <input type="file" id="scheduleFile" accept=".xlsx,.xls" hidden>
   </div>
 
   <div class="page">
@@ -1673,6 +1675,111 @@
         }
       }
     }
+
+    // ===== Загрузка расписания из Excel в лист Raw =====
+    // Кнопка скрыта на обычных экранах. Чтобы она появилась, один раз откройте
+    // табло со ссылкой ...?admin=1 — браузер запомнит это на вашем устройстве.
+    // Скрыть обратно: ...?admin=0
+    (function setupScheduleUpload_(){
+      const btn = document.getElementById("uploadBtn");
+      const input = document.getElementById("scheduleFile");
+      if (!btn || !input) return;
+
+      if (params.get("admin") === "1") { try { localStorage.setItem("ipamTabloAdmin", "1"); } catch(e) {} }
+      if (params.get("admin") === "0") { try { localStorage.removeItem("ipamTabloAdmin"); } catch(e) {} }
+      let isAdmin = false;
+      try { isAdmin = localStorage.getItem("ipamTabloAdmin") === "1"; } catch(e) {}
+      if (params.get("admin") === "1") isAdmin = true;
+      if (!isAdmin) return;
+
+      btn.hidden = false;
+      btn.addEventListener("click", () => input.click());
+
+      // Библиотеку чтения Excel грузим только когда она реально нужна,
+      // чтобы не тормозить обычное табло
+      function loadXLSX_(){
+        if (window.XLSX) return Promise.resolve();
+        return new Promise((ok, fail) => {
+          const s = document.createElement("script");
+          s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+          s.onload = ok;
+          s.onerror = () => fail(new Error("Не загрузилась библиотека чтения Excel"));
+          document.head.appendChild(s);
+        });
+      }
+
+      function analyzeSchedule_(rows){
+        if (!rows.length || String(rows[0][0]).trim() !== "Пара") {
+          throw new Error("Это не то расписание: в ячейке A1 должно быть слово «Пара».");
+        }
+        const dates = rows[0].slice(1)
+          .map(c => (String(c).match(/\d{2}\.\d{2}\.\d{2,4}/) || [])[0])
+          .filter(Boolean);
+        if (!dates.length) throw new Error("В первой строке не найдены даты.");
+
+        const rooms = new Set();
+        let lessons = 0;
+        rows.forEach(r => {
+          const first = String(r[0]).trim();
+          if (/^\d+\.\d+(\.\d+)?$/.test(first)) {
+            rooms.add(first);
+            r.slice(1).forEach(c => {
+              const t = String(c).trim();
+              if (t && t !== "Свободно") lessons++;
+            });
+          }
+        });
+        return { from: dates[0], to: dates[dates.length - 1], days: dates.length, rooms: rooms.size, lessons };
+      }
+
+      input.addEventListener("change", async () => {
+        const file = input.files[0];
+        input.value = "";
+        if (!file) return;
+        const label = btn.textContent;
+        try {
+          btn.disabled = true;
+          btn.textContent = "Читаю файл…";
+          await loadXLSX_();
+          const wb = XLSX.read(await file.arrayBuffer(), { type: "array" });
+          const ws = wb.Sheets["Raw"] || wb.Sheets[wb.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: "" })
+            .map(r => r.map(c => String(c)));
+          while (rows.length && rows[rows.length - 1].every(c => c === "")) rows.pop();
+
+          const info = analyzeSchedule_(rows);
+          const ok = confirm(
+            "Период: " + info.from + " — " + info.to + " (дней: " + info.days + ")\n" +
+            "Помещений: " + info.rooms + "\n" +
+            "Занятых ячеек: " + info.lessons + "\n\n" +
+            "Заменить текущее расписание?"
+          );
+          if (!ok) return;
+
+          const pin = prompt("PIN для загрузки:");
+          if (!pin) return;
+
+          btn.textContent = "Загружаю…";
+          // text/plain — чтобы браузер не слал preflight-запрос (Apps Script его не обрабатывает)
+          const res = await fetch(BASE_API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({ action: "uploadRaw", pin, rows })
+          });
+          const data = await res.json();
+          if (!data.ok) throw new Error(data.error || "Ошибка на сервере");
+
+          btn.textContent = "Обновляю табло…";
+          await loadAllData();
+          alert("Готово. Расписание загружено, строк: " + data.rows);
+        } catch (err) {
+          alert("Не удалось загрузить: " + (err && err.message ? err.message : err));
+        } finally {
+          btn.disabled = false;
+          btn.textContent = label;
+        }
+      });
+    })();
 
     updateLocalClock();
     setInterval(updateLocalClock, 1000);
