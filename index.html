@@ -854,6 +854,19 @@
     .monthEvent .n{font-size:16px; font-weight:760; line-height:1.25; word-break:break-word}
     .monthEvent .m{margin-top:5px; color:var(--muted); font-size:13px; line-height:1.35; word-break:break-word}
 
+    .monthEvent{position:relative}
+    .monthEvent.hasActions{padding-right:84px}
+    .evActions{position:absolute; top:8px; right:8px; display:flex; gap:6px}
+    .evBtn{
+      appearance:none; display:inline-flex; align-items:center; justify-content:center;
+      width:30px; height:30px; padding:0; border-radius:50%; cursor:pointer;
+      color:rgba(255,255,255,.7); background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
+    }
+    .evBtn:hover{color:#fff; background:rgba(255,255,255,.14)}
+    .evBtn.danger:hover{color:#fff; background:rgba(239,68,68,.35); border-color:rgba(239,68,68,.55)}
+    .evBtn:focus-visible{outline:2px solid var(--blue); outline-offset:2px}
+    .evBtn svg{width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; pointer-events:none}
+
     .eventForm{display:flex; flex-direction:column; min-height:0}
     .formGrid{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px}
     .formGrid .wide{grid-column:1 / -1}
@@ -2056,10 +2069,13 @@
       if (focusEl) focusEl.focus();
     }
     function hideModal_(el){
+      const afterHide = el._afterHide;
+      el._afterHide = null;
       el.hidden = true;
       document.body.style.overflow = "";
       const trigger = activeModal_ && activeModal_.trigger;
       activeModal_ = null;
+      if (afterHide) { afterHide(); return; }
       if (trigger && trigger.focus) trigger.focus();
     }
     document.addEventListener("keydown", (e) => {
@@ -2090,7 +2106,12 @@
       if (ev.person) meta.push(`Ответственный: ${escapeHtml(ev.person)}`);
       // Комментарии в архивных записях часто рабочие и неформальные, поэтому на месячном списке их видит только админ
       if (hasPin_() && ev.comment) meta.push(`Комментарий: ${escapeHtml(ev.comment)}`);
-      return `<div class="monthEvent">
+      const actions = (IS_ADMIN && ev.row) ? `<div class="evActions">
+          <button class="evBtn" type="button" data-act="edit" data-row="${ev.row}" title="Изменить" aria-label="Изменить мероприятие"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/></svg></button>
+          <button class="evBtn danger" type="button" data-act="delete" data-row="${ev.row}" title="Удалить" aria-label="Удалить мероприятие"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6.5 7l1 13h9l1-13M10 11v6M14 11v6"/></svg></button>
+        </div>` : "";
+      return `<div class="monthEvent${actions ? " hasActions" : ""}">
+        ${actions}
         <div class="t">${escapeHtml(time)}</div>
         <div class="n">${escapeHtml(ev.title)}</div>
         ${meta.length ? `<div class="m">${meta.join("<br>")}</div>` : ""}
@@ -2098,6 +2119,7 @@
     }
 
     function renderMonth_(events){
+      monthState.current = events;
       if (!events.length) {
         monthBody.innerHTML = '<div class="monthState">В этом месяце мероприятий нет</div>';
         return;
@@ -2172,7 +2194,9 @@
     document.getElementById("monthClose").addEventListener("click", () => hideModal_(monthModal));
     monthModal.addEventListener("mousedown", (e) => { if (e.target === monthModal) hideModal_(monthModal); });
 
-    // ===== Добавление мероприятия (админ) =====
+    // ===== Добавление и изменение мероприятия (админ) =====
+    let openEventEdit_ = null; // задаётся ниже, когда готова форма
+
     (function setupEventForm_(){
       const btn = document.getElementById("addEventBtn");
       if (!IS_ADMIN) return;
@@ -2192,13 +2216,41 @@
         show: document.getElementById("evShow")
       };
 
-      btn.addEventListener("click", () => {
+      const headEl = document.getElementById("eventTitle");
+      let editing = null;   // {row, expect} — когда форма открыта на изменение, иначе null
+      let backToMonth = false;
+
+      function openForm_(ev, fromMonth){
+        editing = ev ? { row: ev.row, expect: { iso: ev.iso, start: ev.start, title: ev.title } } : null;
+        backToMonth = !!fromMonth;
         form.reset();
-        f.date.value = localIso_(new Date());
+        f.title.value = ev ? ev.title : "";
+        f.date.value = ev ? ev.iso : localIso_(new Date());
+        f.start.value = ev ? ev.start : "";
+        f.end.value = ev ? ev.end : "";
+        f.place.value = ev ? ev.place : "";
+        f.person.value = ev ? ev.person : "";
+        f.comment.value = ev ? ev.comment : "";
         f.show.checked = true;
         errEl.textContent = "";
+        headEl.textContent = ev ? "Изменить мероприятие" : "Новое мероприятие";
+        submit.textContent = ev ? "Сохранить" : "Добавить";
+        if (fromMonth) {
+          // окно месяца на время прячем, после закрытия формы возвращаем
+          activeModal_ = null;
+          monthModal.hidden = true;
+          modal._afterHide = () => {
+            document.body.style.overflow = "hidden";
+            showModal_(monthModal, document.getElementById("monthClose"));
+          };
+        } else {
+          modal._afterHide = null;
+        }
         showModal_(modal, f.title);
-      });
+      }
+      openEventEdit_ = (ev) => openForm_(ev, true);
+
+      btn.addEventListener("click", () => openForm_(null, false));
       // Форму закрывают только явно (×, «Отмена», Esc): случайный клик мимо не должен стирать введённое
       document.getElementById("eventClose").addEventListener("click", () => hideModal_(modal));
       document.getElementById("eventCancel").addEventListener("click", () => hideModal_(modal));
@@ -2222,26 +2274,60 @@
 
         errEl.textContent = "";
         submit.disabled = true;
-        submit.textContent = "Добавляю…";
+        submit.textContent = editing ? "Сохраняю…" : "Добавляю…";
+        const wasEditing = !!editing;
         try {
-          const data = await adminCall_({ action: "addEvent", event: ev });
+          const data = await adminCall_(wasEditing
+            ? { action: "updateEvent", row: editing.row, expect: editing.expect, event: ev }
+            : { action: "addEvent", event: ev });
           hideModal_(modal);
           monthState.cache = {};
           loadAllData();
+          if (!monthModal.hidden) loadMonth_(true);
           if (data.warning) {
             alert("Мероприятие записано в таблицу, но табло обновилось не полностью:\n" + data.warning +
               "\n\nОбновите вручную: в таблице меню «Табло студий» → «Обновить API мероприятий из ввода».");
           } else {
-            showToast_("Мероприятие добавлено");
+            showToast_(wasEditing ? "Изменения сохранены" : "Мероприятие добавлено");
           }
         } catch(err) {
           if (!err.cancelled) errEl.textContent = err && err.message ? err.message : String(err);
         } finally {
           submit.disabled = false;
-          submit.textContent = "Добавить";
+          submit.textContent = editing ? "Сохранить" : "Добавить";
         }
       });
     })();
+
+    // Кнопки «Изменить» / «Удалить» в списке месяца (админ)
+    monthBody.addEventListener("click", async (e) => {
+      const b = e.target.closest && e.target.closest(".evBtn");
+      if (!b || !IS_ADMIN) return;
+      const ev = (monthState.current || []).find((x) => String(x.row) === b.dataset.row);
+      if (!ev) return;
+      if (b.dataset.act === "edit") {
+        if (openEventEdit_) openEventEdit_(ev);
+        return;
+      }
+      const when = ev.date + (ev.start ? ", " + ev.start : "");
+      if (!confirm("Удалить мероприятие?\n\n" + ev.title + "\n" + when)) return;
+      b.disabled = true;
+      try {
+        const data = await adminCall_({ action: "deleteEvent", row: ev.row, expect: { iso: ev.iso, start: ev.start, title: ev.title } });
+        monthState.cache = {};
+        loadAllData();
+        loadMonth_(true);
+        if (data.warning) {
+          alert("Мероприятие удалено из таблицы, но табло обновилось не полностью:\n" + data.warning +
+            "\n\nОбновите вручную: в таблице меню «Табло студий» → «Обновить API мероприятий из ввода».");
+        } else {
+          showToast_("Мероприятие удалено");
+        }
+      } catch(err) {
+        b.disabled = false;
+        if (!err.cancelled) { alert(err && err.message ? err.message : String(err)); loadMonth_(true); }
+      }
+    });
 
     // ===== Загрузка расписания из Excel в лист Raw (админ) =====
     (function setupScheduleUpload_(){
