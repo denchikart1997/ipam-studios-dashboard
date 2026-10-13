@@ -2150,11 +2150,16 @@
         submit.disabled = true;
         submit.textContent = "Добавляю…";
         try {
-          await adminCall_({ action: "addEvent", event: ev });
+          const data = await adminCall_({ action: "addEvent", event: ev });
           hideModal_(modal);
-          showToast_("Мероприятие добавлено");
           monthState.cache = {};
           loadAllData();
+          if (data.warning) {
+            alert("Мероприятие записано в таблицу, но табло обновилось не полностью:\n" + data.warning +
+              "\n\nОбновите вручную: в таблице меню «Табло студий» → «Обновить API мероприятий из ввода».");
+          } else {
+            showToast_("Мероприятие добавлено");
+          }
         } catch(err) {
           if (!err.cancelled) errEl.textContent = err && err.message ? err.message : String(err);
         } finally {
@@ -2239,7 +2244,12 @@
 
           btn.textContent = "Обновляю табло…";
           await loadAllData();
-          showToast_("Расписание загружено, строк: " + data.rows);
+          if (data.warning) {
+            alert("Расписание записано в лист Raw, но табло обновилось не полностью:\n" + data.warning +
+              "\n\nОбновите вручную: в таблице меню «Табло студий» → «Обновить расписание».");
+          } else {
+            showToast_("Расписание загружено, строк: " + data.rows);
+          }
         } catch (err) {
           if (!err.cancelled) alert("Не удалось загрузить: " + (err && err.message ? err.message : err));
         } finally {
