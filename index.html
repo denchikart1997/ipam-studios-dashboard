@@ -674,6 +674,9 @@
       right:14px;
       z-index:50;
       display:flex;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      max-width:min(640px,70vw);
       gap:8px;
       opacity:.38;
       transition:opacity .18s ease;
@@ -703,6 +706,184 @@
     }
 
 
+
+    .viewBtn:disabled{opacity:.6; cursor:default}
+    .viewBtn:focus-visible,.navBtn:focus-visible,.formBtn:focus-visible{outline:2px solid var(--blue); outline-offset:2px}
+
+    /* ===== Окна: мероприятия на месяц и добавление мероприятия ===== */
+    .modalBack{
+      position:fixed;
+      inset:0;
+      z-index:100;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+      background:rgba(2,6,15,.72);
+      backdrop-filter:blur(6px);
+      -webkit-backdrop-filter:blur(6px);
+    }
+    .modalBack[hidden]{display:none}
+
+    .modal{
+      width:min(720px,100%);
+      max-height:min(88vh,820px);
+      display:flex;
+      flex-direction:column;
+      border-radius:22px;
+      background:#0b1424;
+      border:1px solid var(--border);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+
+    .modalHead{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:14px 16px;
+      border-bottom:1px solid var(--border);
+    }
+    .modalHead h2{
+      flex:1;
+      margin:0;
+      font-size:20px;
+      font-weight:800;
+      text-align:center;
+    }
+    .modalHead.left h2{text-align:left; padding-left:6px}
+
+    .navBtn{
+      appearance:none;
+      width:38px;
+      height:38px;
+      flex:none;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      font-size:22px;
+      line-height:1;
+      cursor:pointer;
+    }
+    .navBtn:hover{background:rgba(255,255,255,.12)}
+
+    .modalBody{
+      padding:14px 16px 18px;
+      overflow-y:auto;
+      -webkit-overflow-scrolling:touch;
+    }
+
+    .monthState{
+      padding:28px 10px;
+      text-align:center;
+      color:var(--muted);
+      font-size:16px;
+    }
+    .monthState.error{color:#fca5a5}
+
+    .monthDay{
+      margin-bottom:14px;
+      padding:12px;
+      border-radius:16px;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);
+    }
+    .monthDay.today{border-color:rgba(59,130,246,.6); background:rgba(59,130,246,.10)}
+    .monthDay.past{opacity:.55}
+    .monthDayHead{
+      display:flex;
+      align-items:baseline;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:8px;
+      font-weight:800;
+      font-size:16px;
+    }
+    .monthDayHead small{color:var(--muted); font-weight:600; font-size:13px}
+    .monthEvents{display:flex; flex-direction:column; gap:8px}
+    .monthEvent{
+      padding:10px 12px;
+      border-radius:13px;
+      background:rgba(0,0,0,.22);
+      border:1px solid rgba(255,255,255,.07);
+      min-width:0;
+    }
+    .monthEvent .t{font-size:13px; color:#cfe4ff; font-weight:760; margin-bottom:4px}
+    .monthEvent .n{font-size:16px; font-weight:760; line-height:1.25; word-break:break-word}
+    .monthEvent .m{margin-top:5px; color:var(--muted); font-size:13px; line-height:1.35; word-break:break-word}
+
+    .eventForm{display:flex; flex-direction:column; min-height:0}
+    .formGrid{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px}
+    .formGrid .wide{grid-column:1 / -1}
+    .field{display:flex; flex-direction:column; gap:6px; min-width:0}
+    .field > span{font-size:13px; color:var(--muted); font-weight:700}
+    .field input[type=text],
+    .field input[type=date],
+    .field input[type=time],
+    .field textarea{
+      width:100%;
+      min-height:44px;
+      color-scheme:dark;
+      font:inherit;
+      font-size:16px; /* 16px — чтобы iOS не увеличивал страницу при вводе */
+      color:var(--text);
+      background:rgba(255,255,255,.06);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:10px 12px;
+    }
+    .field textarea{min-height:76px; resize:vertical}
+    .field input:focus,.field textarea:focus{outline:2px solid var(--blue); outline-offset:1px}
+    .checkField{display:flex; align-items:center; gap:10px; font-size:15px; font-weight:700}
+    .checkField input{width:20px; height:20px; accent-color:var(--blue)}
+
+    .formFoot{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:12px 16px;
+      border-top:1px solid var(--border);
+    }
+    .formErr{flex:1; min-height:20px; color:#fca5a5; font-size:14px; line-height:1.3}
+    .formBtn{
+      appearance:none;
+      min-height:42px;
+      padding:0 18px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      font-size:15px;
+      font-weight:760;
+      cursor:pointer;
+    }
+    .formBtn.primary{background:var(--blue); border-color:var(--blue); color:#fff}
+    .formBtn:disabled{opacity:.6; cursor:default}
+
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom:22px;
+      z-index:120;
+      transform:translateX(-50%);
+      max-width:calc(100% - 32px);
+      padding:12px 18px;
+      border-radius:14px;
+      background:#0f2a1c;
+      border:1px solid rgba(34,197,94,.5);
+      color:#bbf7d0;
+      font-weight:700;
+      box-shadow:var(--shadow);
+    }
+    .toast[hidden]{display:none}
+
+    @media (max-width:640px){
+      .modalBack{padding:0; align-items:flex-end}
+      .modal{width:100%; max-height:94vh; border-radius:22px 22px 0 0}
+      .formGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .formGrid .fieldDate{grid-column:1 / -1}
+    }
 
     body.fitCompact .titleBlock h1{font-size:clamp(28px,3.5vw,46px)}
     body.fitCompact .titleBlock p{font-size:14px; margin-top:6px}
@@ -979,9 +1160,60 @@
   <div class="viewControls" aria-label="Переключение режима отображения">
     <button class="viewBtn" id="tvToggle" type="button">ТВ-режим</button>
     <button class="viewBtn" id="screenToggle" type="button">Мероприятия</button>
+    <button class="viewBtn" id="monthBtn" type="button" title="Мероприятия на месяц">Месяц</button>
+    <button class="viewBtn" id="addEventBtn" type="button" hidden>+ Мероприятие</button>
     <button class="viewBtn" id="uploadBtn" type="button" hidden>Загрузить расписание</button>
     <input type="file" id="scheduleFile" accept=".xlsx,.xls" hidden>
   </div>
+
+  <!-- Мероприятия на месяц -->
+  <div class="modalBack" id="monthModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="monthTitle">
+      <div class="modalHead">
+        <button class="navBtn" id="monthPrev" type="button" aria-label="Предыдущий месяц">‹</button>
+        <h2 id="monthTitle">Мероприятия</h2>
+        <button class="navBtn" id="monthNext" type="button" aria-label="Следующий месяц">›</button>
+        <button class="navBtn" id="monthClose" type="button" aria-label="Закрыть">×</button>
+      </div>
+      <div class="modalBody" id="monthBody"></div>
+    </div>
+  </div>
+
+  <!-- Добавление мероприятия (только в админ-режиме) -->
+  <div class="modalBack" id="eventModal" hidden>
+    <form class="modal eventForm" id="eventForm" role="dialog" aria-modal="true" aria-labelledby="eventTitle" novalidate>
+      <div class="modalHead left">
+        <h2 id="eventTitle">Новое мероприятие</h2>
+        <button class="navBtn" id="eventClose" type="button" aria-label="Закрыть">×</button>
+      </div>
+      <div class="modalBody">
+        <div class="formGrid">
+          <label class="field wide"><span>Название *</span>
+            <input type="text" id="evTitle" maxlength="200" autocomplete="off" required></label>
+          <label class="field fieldDate"><span>Дата *</span>
+            <input type="date" id="evDate" required></label>
+          <label class="field"><span>Начало *</span>
+            <input type="time" id="evStart" required></label>
+          <label class="field"><span>Конец</span>
+            <input type="time" id="evEnd"></label>
+          <label class="field wide"><span>Место</span>
+            <input type="text" id="evPlace" maxlength="100" autocomplete="off" placeholder="например, 3к 222"></label>
+          <label class="field wide"><span>Ответственный</span>
+            <input type="text" id="evPerson" maxlength="200" autocomplete="off"></label>
+          <label class="field wide"><span>Комментарий</span>
+            <textarea id="evComment" maxlength="500"></textarea></label>
+          <label class="checkField wide"><input type="checkbox" id="evShow" checked> Показывать на табло</label>
+        </div>
+      </div>
+      <div class="formFoot">
+        <div class="formErr" id="eventErr" role="alert"></div>
+        <button class="formBtn" id="eventCancel" type="button">Отмена</button>
+        <button class="formBtn primary" id="eventSubmit" type="submit">Добавить</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="toast" id="toast" role="status" hidden></div>
 
   <div class="page">
     <header class="hero">
@@ -1676,21 +1908,267 @@
       }
     }
 
-    // ===== Загрузка расписания из Excel в лист Raw =====
-    // Кнопка скрыта на обычных экранах. Чтобы она появилась, один раз откройте
-    // табло со ссылкой ...?admin=1 — браузер запомнит это на вашем устройстве.
-    // Скрыть обратно: ...?admin=0
+    // ===== Админ-режим и общие вызовы API =====
+    // Админ-режим включается ссылкой ...?admin=1 (запоминается на этом устройстве),
+    // выключается ссылкой ...?admin=0. Он открывает кнопки «+ Мероприятие» и «Загрузить расписание».
+    // Защита записи — PIN, который проверяет сам Apps Script; кнопки лишь не мозолят глаза.
+    const IS_ADMIN = (function(){
+      try {
+        if (params.get("admin") === "1") localStorage.setItem("ipamTabloAdmin", "1");
+        if (params.get("admin") === "0") localStorage.removeItem("ipamTabloAdmin");
+        return localStorage.getItem("ipamTabloAdmin") === "1";
+      } catch(e) { return params.get("admin") === "1"; }
+    })();
+
+    async function apiPost_(payload){
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 30000);
+      try {
+        const res = await fetch(BASE_API_URL, {
+          method: "POST",
+          // text/plain — чтобы браузер не слал preflight-запрос (Apps Script его не обрабатывает)
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload),
+          signal: ctrl.signal
+        });
+        try { return await res.json(); }
+        catch(e) { throw new Error("Сервер ответил не так, как ожидалось. Проверьте, что в Apps Script обновлено развёртывание."); }
+      } catch(e) {
+        if (e && e.name === "AbortError") throw new Error("Сервер долго не отвечает. Попробуйте ещё раз.");
+        throw e;
+      } finally {
+        clearTimeout(t);
+      }
+    }
+
+    function cancelled_(){ const e = new Error("cancelled"); e.cancelled = true; return e; }
+
+    // PIN спрашиваем один раз за вкладку; запоминаем только после успешного ответа сервера
+    function getPin_(){
+      let pin = "";
+      try { pin = sessionStorage.getItem("ipamTabloPin") || ""; } catch(e) {}
+      if (!pin) pin = prompt("PIN для изменения данных:") || "";
+      if (!pin) throw cancelled_();
+      return pin;
+    }
+
+    async function adminCall_(payload){
+      const pin = getPin_();
+      const data = await apiPost_({ ...payload, pin });
+      if (!data.ok) {
+        if (/PIN/.test(data.error || "")) { try { sessionStorage.removeItem("ipamTabloPin"); } catch(e) {} }
+        throw new Error(data.error || "Ошибка на сервере");
+      }
+      try { sessionStorage.setItem("ipamTabloPin", pin); } catch(e) {}
+      return data;
+    }
+
+    let toastTimer = null;
+    function showToast_(text){
+      const el = document.getElementById("toast");
+      el.textContent = text;
+      el.hidden = false;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { el.hidden = true; }, 3500);
+    }
+
+    // ===== Окна =====
+    let activeModal_ = null;
+    function showModal_(el, focusEl){
+      activeModal_ = { el, trigger: document.activeElement };
+      el.hidden = false;
+      document.body.style.overflow = "hidden";
+      if (focusEl) focusEl.focus();
+    }
+    function hideModal_(el){
+      el.hidden = true;
+      document.body.style.overflow = "";
+      const trigger = activeModal_ && activeModal_.trigger;
+      activeModal_ = null;
+      if (trigger && trigger.focus) trigger.focus();
+    }
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && activeModal_) hideModal_(activeModal_.el);
+    });
+
+    // ===== Мероприятия на месяц =====
+    const MONTH_NAMES = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
+    const monthModal = document.getElementById("monthModal");
+    const monthBody = document.getElementById("monthBody");
+    const monthTitle = document.getElementById("monthTitle");
+    const monthState = { y: 0, m: 0, cache: {}, seq: 0 };
+
+    function pad2_(n){ return (n < 10 ? "0" : "") + n; }
+    function monthKey_(y, m){ return y + "-" + pad2_(m + 1); }
+    function localIso_(d){ return d.getFullYear() + "-" + pad2_(d.getMonth() + 1) + "-" + pad2_(d.getDate()); }
+    function eventsWord_(n){
+      const a = n % 10, b = n % 100;
+      if (a === 1 && b !== 11) return "мероприятие";
+      if (a >= 2 && a <= 4 && (b < 10 || b >= 20)) return "мероприятия";
+      return "мероприятий";
+    }
+
+    function renderMonthEvent_(ev){
+      const time = ev.start ? (ev.end ? `${ev.start}–${ev.end}` : `с ${ev.start}`) : "Время не указано";
+      const meta = [];
+      if (ev.place) meta.push(`Место: ${escapeHtml(ev.place)}`);
+      if (ev.person) meta.push(`Ответственный: ${escapeHtml(ev.person)}`);
+      // Комментарии в архивных записях часто рабочие и неформальные, поэтому на месячном списке их видит только админ
+      if (IS_ADMIN && ev.comment) meta.push(`Комментарий: ${escapeHtml(ev.comment)}`);
+      return `<div class="monthEvent">
+        <div class="t">${escapeHtml(time)}</div>
+        <div class="n">${escapeHtml(ev.title)}</div>
+        ${meta.length ? `<div class="m">${meta.join("<br>")}</div>` : ""}
+      </div>`;
+    }
+
+    function renderMonth_(events){
+      if (!events.length) {
+        monthBody.innerHTML = '<div class="monthState">В этом месяце мероприятий нет</div>';
+        return;
+      }
+      const byDay = new Map();
+      events.forEach((ev) => {
+        if (!byDay.has(ev.iso)) byDay.set(ev.iso, []);
+        byDay.get(ev.iso).push(ev);
+      });
+      const todayIso = localIso_(new Date());
+      let html = "";
+      byDay.forEach((list, iso) => {
+        const [yy, mm, dd] = iso.split("-").map(Number);
+        let label = new Date(yy, mm - 1, dd).toLocaleDateString("ru-RU", { weekday: "short", day: "numeric", month: "long" });
+        label = label.charAt(0).toUpperCase() + label.slice(1);
+        const cls = iso === todayIso ? " today" : (iso < todayIso ? " past" : "");
+        html += `<section class="monthDay${cls}">
+          <div class="monthDayHead"><span>${escapeHtml(label)}</span><small>${list.length} ${eventsWord_(list.length)}</small></div>
+          <div class="monthEvents">${list.map(renderMonthEvent_).join("")}</div>
+        </section>`;
+      });
+      monthBody.innerHTML = html;
+
+      // Прокручиваем к сегодняшнему дню (или ближайшему будущему)
+      const target = monthBody.querySelector(".today") || monthBody.querySelector(".monthDay:not(.past)");
+      if (target) {
+        monthBody.scrollTop = target.getBoundingClientRect().top - monthBody.getBoundingClientRect().top + monthBody.scrollTop - 8;
+      }
+    }
+
+    async function loadMonth_(force){
+      const { y, m } = monthState;
+      const key = monthKey_(y, m);
+      monthTitle.textContent = MONTH_NAMES[m] + " " + y;
+      const mySeq = ++monthState.seq;
+
+      const cached = monthState.cache[key];
+      if (cached && !force && Date.now() - cached.t < 60000) { renderMonth_(cached.events); return; }
+
+      monthBody.innerHTML = '<div class="monthState">Загружаем…</div>';
+      try {
+        const data = await apiPost_({ action: "getEventsMonth", month: key });
+        if (mySeq !== monthState.seq) return; // пользователь уже листает другой месяц
+        if (!data.ok) throw new Error(data.error || "Ошибка на сервере");
+        monthState.cache[key] = { t: Date.now(), events: data.events || [] };
+        renderMonth_(data.events || []);
+      } catch(err) {
+        if (mySeq !== monthState.seq) return;
+        monthBody.innerHTML = '<div class="monthState error">Не удалось загрузить: ' + escapeHtml(err && err.message ? err.message : String(err)) +
+          '<br><br><button class="formBtn" id="monthRetry" type="button">Повторить</button></div>';
+        document.getElementById("monthRetry").addEventListener("click", () => loadMonth_(true));
+      }
+    }
+
+    function shiftMonth_(delta){
+      let m = monthState.m + delta, y = monthState.y;
+      if (m < 0) { m = 11; y--; }
+      if (m > 11) { m = 0; y++; }
+      monthState.m = m; monthState.y = y;
+      loadMonth_();
+    }
+
+    document.getElementById("monthBtn").addEventListener("click", () => {
+      const now = new Date();
+      monthState.y = now.getFullYear();
+      monthState.m = now.getMonth();
+      showModal_(monthModal, document.getElementById("monthClose"));
+      loadMonth_();
+    });
+    document.getElementById("monthPrev").addEventListener("click", () => shiftMonth_(-1));
+    document.getElementById("monthNext").addEventListener("click", () => shiftMonth_(1));
+    document.getElementById("monthClose").addEventListener("click", () => hideModal_(monthModal));
+    monthModal.addEventListener("mousedown", (e) => { if (e.target === monthModal) hideModal_(monthModal); });
+
+    // ===== Добавление мероприятия (админ) =====
+    (function setupEventForm_(){
+      const btn = document.getElementById("addEventBtn");
+      if (!IS_ADMIN) return;
+      btn.hidden = false;
+
+      const modal = document.getElementById("eventModal");
+      const form = document.getElementById("eventForm");
+      const errEl = document.getElementById("eventErr");
+      const submit = document.getElementById("eventSubmit");
+      const f = {
+        title: document.getElementById("evTitle"),
+        date: document.getElementById("evDate"),
+        start: document.getElementById("evStart"),
+        end: document.getElementById("evEnd"),
+        place: document.getElementById("evPlace"),
+        person: document.getElementById("evPerson"),
+        comment: document.getElementById("evComment"),
+        show: document.getElementById("evShow")
+      };
+
+      btn.addEventListener("click", () => {
+        form.reset();
+        f.date.value = localIso_(new Date());
+        f.show.checked = true;
+        errEl.textContent = "";
+        showModal_(modal, f.title);
+      });
+      // Форму закрывают только явно (×, «Отмена», Esc): случайный клик мимо не должен стирать введённое
+      document.getElementById("eventClose").addEventListener("click", () => hideModal_(modal));
+      document.getElementById("eventCancel").addEventListener("click", () => hideModal_(modal));
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const ev = {
+          title: f.title.value.trim(),
+          date: f.date.value,
+          start: f.start.value,
+          end: f.end.value,
+          place: f.place.value.trim(),
+          person: f.person.value.trim(),
+          comment: f.comment.value.trim(),
+          show: f.show.checked
+        };
+        if (!ev.title) { errEl.textContent = "Укажите название"; f.title.focus(); return; }
+        if (!ev.date) { errEl.textContent = "Укажите дату"; f.date.focus(); return; }
+        if (!ev.start) { errEl.textContent = "Укажите время начала"; f.start.focus(); return; }
+        if (ev.end && ev.end < ev.start) { errEl.textContent = "Окончание раньше начала"; f.end.focus(); return; }
+
+        errEl.textContent = "";
+        submit.disabled = true;
+        submit.textContent = "Добавляю…";
+        try {
+          await adminCall_({ action: "addEvent", event: ev });
+          hideModal_(modal);
+          showToast_("Мероприятие добавлено");
+          monthState.cache = {};
+          loadAllData();
+        } catch(err) {
+          if (!err.cancelled) errEl.textContent = err && err.message ? err.message : String(err);
+        } finally {
+          submit.disabled = false;
+          submit.textContent = "Добавить";
+        }
+      });
+    })();
+
+    // ===== Загрузка расписания из Excel в лист Raw (админ) =====
     (function setupScheduleUpload_(){
       const btn = document.getElementById("uploadBtn");
       const input = document.getElementById("scheduleFile");
-      if (!btn || !input) return;
-
-      if (params.get("admin") === "1") { try { localStorage.setItem("ipamTabloAdmin", "1"); } catch(e) {} }
-      if (params.get("admin") === "0") { try { localStorage.removeItem("ipamTabloAdmin"); } catch(e) {} }
-      let isAdmin = false;
-      try { isAdmin = localStorage.getItem("ipamTabloAdmin") === "1"; } catch(e) {}
-      if (params.get("admin") === "1") isAdmin = true;
-      if (!isAdmin) return;
+      if (!btn || !input || !IS_ADMIN) return;
 
       btn.hidden = false;
       btn.addEventListener("click", () => input.click());
@@ -1756,24 +2234,14 @@
           );
           if (!ok) return;
 
-          const pin = prompt("PIN для загрузки:");
-          if (!pin) return;
-
           btn.textContent = "Загружаю…";
-          // text/plain — чтобы браузер не слал preflight-запрос (Apps Script его не обрабатывает)
-          const res = await fetch(BASE_API_URL, {
-            method: "POST",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify({ action: "uploadRaw", pin, rows })
-          });
-          const data = await res.json();
-          if (!data.ok) throw new Error(data.error || "Ошибка на сервере");
+          const data = await adminCall_({ action: "uploadRaw", rows });
 
           btn.textContent = "Обновляю табло…";
           await loadAllData();
-          alert("Готово. Расписание загружено, строк: " + data.rows);
+          showToast_("Расписание загружено, строк: " + data.rows);
         } catch (err) {
-          alert("Не удалось загрузить: " + (err && err.message ? err.message : err));
+          if (!err.cancelled) alert("Не удалось загрузить: " + (err && err.message ? err.message : err));
         } finally {
           btn.disabled = false;
           btn.textContent = label;
