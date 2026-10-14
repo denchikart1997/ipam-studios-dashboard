@@ -867,6 +867,48 @@
     .evBtn:focus-visible{outline:2px solid var(--blue); outline-offset:2px}
     .evBtn svg{width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; pointer-events:none}
 
+    /* Метки мероприятия: тех. поддержка / съёмка интервью / сопровождение */
+    :root{--tag-on:#ff5a5a}
+    .tagsRow{display:flex; gap:6px; margin-top:9px}
+    .tagBtn{
+      appearance:none; display:inline-flex; align-items:center; justify-content:center;
+      width:28px; height:28px; padding:0; border-radius:50%;
+      color:rgba(255,255,255,.9); background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12);
+      opacity:.32; cursor:pointer; transition:opacity .15s ease, background .15s ease, color .15s ease, border-color .15s ease;
+    }
+    .tagBtn:hover{opacity:.75}
+    .tagBtn.on{opacity:1; color:var(--tag-on); background:rgba(239,68,68,.18); border-color:rgba(239,68,68,.6)}
+    .tagBtn:focus-visible{outline:2px solid var(--blue); outline-offset:2px}
+    .tagBtn:disabled{cursor:default}
+    .tagBtn svg,.tagChoice svg{width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; pointer-events:none}
+    .tagBtn.static{cursor:default}
+    .tagBtn.static:hover{opacity:1}
+
+    .tagPick{display:flex; flex-wrap:wrap; gap:8px}
+    .tagChoice{
+      appearance:none; display:inline-flex; align-items:center; gap:8px; min-height:40px; padding:0 14px 0 11px;
+      border-radius:999px; font:inherit; font-size:14px; font-weight:700; cursor:pointer;
+      color:rgba(255,255,255,.9); background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.14);
+      opacity:.5; transition:opacity .15s ease, background .15s ease, color .15s ease, border-color .15s ease;
+    }
+    .tagChoice:hover{opacity:.85}
+    .tagChoice.on{opacity:1; color:var(--tag-on); background:rgba(239,68,68,.16); border-color:rgba(239,68,68,.6)}
+    .tagChoice:focus-visible{outline:2px solid var(--blue); outline-offset:2px}
+
+    /* на табло: только включённые метки, рядом со временем */
+    .weekEventTime{display:flex; align-items:center; gap:8px}
+    .weekEventTime .wt{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+    .boardTags{display:inline-flex; gap:5px; flex:none}
+    .boardTags .tagBtn{width:24px; height:24px; opacity:1}
+    .boardTags .tagBtn svg{width:13px; height:13px}
+    body.fitUltra .boardTags .tagBtn{width:20px; height:20px}
+
+    /* Обычный (не ТВ) режим: карточка дня растёт под текст, комментарии видны целиком */
+    body.eventsView:not(.tv) .grid{grid-auto-rows:minmax(var(--auto-card-height),auto)}
+    body.eventsView:not(.tv) .eventList{overflow:visible}
+    body.eventsView:not(.tv) .weekEventMeta,
+    body.eventsView:not(.tv) .weekEventComment{display:block; -webkit-line-clamp:unset; overflow:visible}
+
     .eventForm{display:flex; flex-direction:column; min-height:0}
     .formGrid{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px}
     .formGrid .wide{grid-column:1 / -1}
@@ -1000,6 +1042,9 @@
       letter-spacing:-.012em;
       line-height:.98;
     }
+    /* Узкие карточки: плашка с числом событий переходит на строку ниже, а не режет слово «Сегодня» */
+    .eventDayCard .cardTop{flex-wrap:wrap; row-gap:8px}
+    .eventDayCard .room{word-break:normal; overflow-wrap:normal}
 
     .dayDate{
       color:var(--muted);
@@ -1062,6 +1107,18 @@
       word-break:break-word;
     }
 
+    .weekEventComment{
+      margin-top:6px;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.3;
+      display:-webkit-box;
+      -webkit-line-clamp:3;
+      -webkit-box-orient:vertical;
+      overflow:hidden;
+      word-break:break-word;
+    }
+
     .emptyDayText{
       position:relative;
       z-index:1;
@@ -1079,12 +1136,14 @@
     body.fitCompact .weekEvent{padding:10px 12px}
     body.fitCompact .weekEventTitle{font-size:15px}
     body.fitCompact .weekEventMeta{font-size:12px; -webkit-line-clamp:1}
+    body.fitCompact .weekEventComment{font-size:12px; margin-top:5px; -webkit-line-clamp:1}
 
     body.fitUltra .eventList{margin-top:8px; gap:7px}
     body.fitUltra .weekEvent{padding:9px 10px}
     body.fitUltra .weekEventTime{font-size:12px}
     body.fitUltra .weekEventTitle{font-size:14px; -webkit-line-clamp:2}
-    body.fitUltra .weekEventMeta{display:none}
+    body.fitUltra .weekEventMeta{display:none}   /* в самой тесной вёрстке (ТВ) убираем «Место/Ответственный», а комментарий оставляем */
+    body.fitUltra .weekEventComment{font-size:12px; margin-top:4px; -webkit-line-clamp:1}  /* раньше комментарий здесь пропадал совсем */
 
     @media (max-width:1100px){
       .grid{grid-template-columns:repeat(2,minmax(0,1fr)); grid-auto-rows:auto}
@@ -1147,7 +1206,8 @@
         white-space:normal;
       }
       .weekEventTitle,
-      .weekEventMeta{
+      .weekEventMeta,
+      .weekEventComment{
         display:block;
         overflow:visible;
         -webkit-line-clamp:unset;
@@ -1272,6 +1332,8 @@
             <input type="text" id="evPerson" maxlength="200" autocomplete="off"></label>
           <label class="field wide"><span>Комментарий</span>
             <textarea id="evComment" maxlength="500"></textarea></label>
+          <div class="field wide"><span>Что нужно</span>
+            <div class="tagPick" id="evTags"></div></div>
           <label class="checkField wide"><input type="checkbox" id="evShow" checked> Показывать на табло</label>
         </div>
       </div>
@@ -1376,6 +1438,10 @@
     let currentView = params.get("view") === "events" ? "events" : "studios";
     let studiosData = null;
     let eventsData = null;
+    // Метки для табло: словарь «дата|начало|название» -> метки (берём из списка месяца, в Мероприятия_API их нет)
+    const boardTags = { map: {}, t: 0, busy: false };
+    const tagKey_ = (date, start, title) => `${date}|${start || ""}|${String(title || "").trim().toLowerCase()}`;
+
     let lastGoodDutyData = null;
     let hasLoadedOnce = false;
     let rotationTimer = null;
@@ -1757,18 +1823,19 @@
       return `${dateObj.getDate()} ${getMonthGenitiveRu(dateObj.getMonth())}`;
     }
 
-    function renderWeekEvent(event){
+    function renderWeekEvent(event, dayDate){
       const time = `${escapeHtml(event.start || "—")}–${escapeHtml(event.end || "—")}`;
       const place = event.place ? `Место: ${escapeHtml(event.place)}` : "";
       const person = event.person ? `Ответственный: ${escapeHtml(event.person)}` : "";
       const comment = event.comment ? `Комментарий: ${escapeHtml(event.comment)}` : "";
-      const meta = [place, person, comment].filter(Boolean).join(" · ");
+      const meta = [place, person].filter(Boolean).join(" · ");
 
       return `
         <div class="weekEvent">
-          <div class="weekEventTime">${time}</div>
+          <div class="weekEventTime"><span class="wt">${time}</span>${activeTagsHtml_(boardTags.map[tagKey_(dayDate, event.start, event.title)])}</div>
           <div class="weekEventTitle">${escapeHtml(event.title || "Мероприятие")}</div>
           ${meta ? `<div class="weekEventMeta">${meta}</div>` : ""}
+          ${comment ? `<div class="weekEventComment">${comment}</div>` : ""}
         </div>
       `;
     }
@@ -1794,7 +1861,7 @@
           </div>
 
           ${hasEvents
-            ? `<div class="eventList">${events.map(renderWeekEvent).join("")}</div>`
+            ? `<div class="eventList">${events.map((ev) => renderWeekEvent(ev, day.date)).join("")}</div>`
             : `<div class="emptyDayText">На этот день мероприятий нет</div>`
           }
         </article>
@@ -1949,6 +2016,7 @@
         if (data && data.events) {
           eventsData = data.events;
           if (currentView === "events") renderEvents(eventsData);
+          refreshBoardTags_();
         }
 
         if (data && data.duty) {
@@ -2099,13 +2167,66 @@
       return "мероприятий";
     }
 
+    // ===== Метки мероприятия =====
+    const TAGS = [
+      { key: "tech",   label: "Тех. поддержка",           svg: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>' },
+      { key: "shoot",  label: "Съёмка интервью",          svg: '<path d="m16 13 5.2 3.5a.5.5 0 0 0 .8-.4V7.9a.5.5 0 0 0-.8-.4L16 11"/><rect x="2" y="6" width="14" height="12" rx="2"/>' },
+      { key: "escort", label: "Сопровождение мероприятия", svg: '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4"/>' }
+    ];
+    const tagSvg_ = (t) => `<svg viewBox="0 0 24 24" aria-hidden="true">${t.svg}</svg>`;
+
+    // Значок метки: интерактивный (кнопка) или статичный (только показать)
+    function tagBtnHtml_(t, on, attrs){
+      const label = t.label + (on ? " — нужно" : "");
+      return attrs
+        ? `<button class="tagBtn${on ? " on" : ""}" type="button" data-tag="${t.key}" ${attrs} aria-pressed="${on ? "true" : "false"}" title="${label}" aria-label="${label}">${tagSvg_(t)}</button>`
+        : `<span class="tagBtn static on" title="${t.label}" role="img" aria-label="${t.label}">${tagSvg_(t)}</span>`;
+    }
+
+    // Только включённые метки (для табло)
+    function activeTagsHtml_(tags){
+      const set = new Set(tags || []);
+      const html = TAGS.filter((t) => set.has(t.key)).map((t) => tagBtnHtml_(t, true, null)).join("");
+      return html ? `<span class="boardTags">${html}</span>` : "";
+    }
+
+    async function refreshBoardTags_(){
+      const days = (eventsData && Array.isArray(eventsData.days)) ? eventsData.days : [];
+      if (!days.some((d) => d.events && d.events.length)) return;
+      if (boardTags.busy || Date.now() - boardTags.t < 55000) return;
+      boardTags.busy = true;
+      try {
+        const months = new Set();
+        days.forEach((d) => { const m = String(d.date || "").match(/^\d{2}\.(\d{2})\.(\d{4})$/); if (m) months.add(m[2] + "-" + m[1]); });
+        const map = {};
+        for (const key of months) {
+          const data = await apiPost_({ action: "getEventsMonth", month: key });
+          if (data && data.ok) (data.events || []).forEach((ev) => { if (ev.tags && ev.tags.length) map[tagKey_(ev.date, ev.start, ev.title)] = ev.tags; });
+          else return;   // сервер без поддержки меток или сбой: табло остаётся как есть
+        }
+        boardTags.t = Date.now();
+        if (JSON.stringify(map) !== JSON.stringify(boardTags.map)) {
+          boardTags.map = map;
+          if (currentView === "events" && eventsData) renderEvents(eventsData);
+        }
+      } catch(e) {
+        // метки — украшение, табло без них работает; повтор будет при следующем обновлении
+      } finally {
+        boardTags.busy = false;
+      }
+    }
+
     function renderMonthEvent_(ev){
       const time = ev.start ? (ev.end ? `${ev.start}–${ev.end}` : `с ${ev.start}`) : "Время не указано";
       const meta = [];
       if (ev.place) meta.push(`Место: ${escapeHtml(ev.place)}`);
       if (ev.person) meta.push(`Ответственный: ${escapeHtml(ev.person)}`);
-      // Комментарии в архивных записях часто рабочие и неформальные, поэтому на месячном списке их видит только админ
-      if (hasPin_() && ev.comment) meta.push(`Комментарий: ${escapeHtml(ev.comment)}`);
+      if (ev.comment) meta.push(`Комментарий: ${escapeHtml(ev.comment)}`);
+      const on = new Set(ev.tags || []);
+      const tagsHtml = !Array.isArray(ev.tags) ? ""   // сервер ещё без поддержки меток (старый Admin.gs) — иконки не показываем
+        : (IS_ADMIN && ev.row)
+        ? `<div class="tagsRow">${TAGS.map((t) => tagBtnHtml_(t, on.has(t.key), `data-row="${ev.row}"`)).join("")}</div>`
+        : (on.size ? `<div class="tagsRow">${TAGS.filter((t) => on.has(t.key)).map((t) => tagBtnHtml_(t, true, null)).join("")}</div>` : "");
       const actions = (IS_ADMIN && ev.row) ? `<div class="evActions">
           <button class="evBtn" type="button" data-act="edit" data-row="${ev.row}" title="Изменить" aria-label="Изменить мероприятие"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/></svg></button>
           <button class="evBtn danger" type="button" data-act="delete" data-row="${ev.row}" title="Удалить" aria-label="Удалить мероприятие"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6.5 7l1 13h9l1-13M10 11v6M14 11v6"/></svg></button>
@@ -2115,6 +2236,7 @@
         <div class="t">${escapeHtml(time)}</div>
         <div class="n">${escapeHtml(ev.title)}</div>
         ${meta.length ? `<div class="m">${meta.join("<br>")}</div>` : ""}
+        ${tagsHtml}
       </div>`;
     }
 
@@ -2217,6 +2339,17 @@
       };
 
       const headEl = document.getElementById("eventTitle");
+      const tagBox = document.getElementById("evTags");
+      let formTags = new Set();
+      function drawFormTags_(){
+        tagBox.innerHTML = TAGS.map((t) => `<button class="tagChoice${formTags.has(t.key) ? " on" : ""}" type="button" data-tag="${t.key}" aria-pressed="${formTags.has(t.key)}">${tagSvg_(t)}<span>${t.label}</span></button>`).join("");
+      }
+      tagBox.addEventListener("click", (e) => {
+        const b = e.target.closest && e.target.closest(".tagChoice");
+        if (!b) return;
+        if (formTags.has(b.dataset.tag)) formTags.delete(b.dataset.tag); else formTags.add(b.dataset.tag);
+        drawFormTags_();
+      });
       let editing = null;   // {row, expect} — когда форма открыта на изменение, иначе null
       let backToMonth = false;
 
@@ -2232,6 +2365,8 @@
         f.person.value = ev ? ev.person : "";
         f.comment.value = ev ? ev.comment : "";
         f.show.checked = true;
+        formTags = new Set(ev && ev.tags ? ev.tags : []);
+        drawFormTags_();
         errEl.textContent = "";
         headEl.textContent = ev ? "Изменить мероприятие" : "Новое мероприятие";
         submit.textContent = ev ? "Сохранить" : "Добавить";
@@ -2265,7 +2400,8 @@
           place: f.place.value.trim(),
           person: f.person.value.trim(),
           comment: f.comment.value.trim(),
-          show: f.show.checked
+          show: f.show.checked,
+          tags: TAGS.map((t) => t.key).filter((k) => formTags.has(k))
         };
         if (!ev.title) { errEl.textContent = "Укажите название"; f.title.focus(); return; }
         if (!ev.date) { errEl.textContent = "Укажите дату"; f.date.focus(); return; }
@@ -2282,6 +2418,7 @@
             : { action: "addEvent", event: ev });
           hideModal_(modal);
           monthState.cache = {};
+          boardTags.t = 0;
           loadAllData();
           if (!monthModal.hidden) loadMonth_(true);
           if (data.warning) {
@@ -2301,6 +2438,38 @@
 
     // Кнопки «Изменить» / «Удалить» в списке месяца (админ)
     monthBody.addEventListener("click", async (e) => {
+      const tb = e.target.closest && e.target.closest(".tagBtn[data-row]");
+      if (tb) {
+        if (!IS_ADMIN || tb.disabled) return;
+        const ev = (monthState.current || []).find((x) => String(x.row) === tb.dataset.row);
+        if (!ev) return;
+        const prev = ev.tags || [];
+        const set = new Set(prev);
+        if (set.has(tb.dataset.tag)) set.delete(tb.dataset.tag); else set.add(tb.dataset.tag);
+        const next = TAGS.map((t) => t.key).filter((k) => set.has(k));
+        const redraw = (tags) => {
+          const row = tb.closest(".tagsRow");
+          if (!row) return;
+          row.querySelectorAll(".tagBtn").forEach((el) => {
+            const isOn = tags.includes(el.dataset.tag);
+            el.classList.toggle("on", isOn);
+            el.setAttribute("aria-pressed", isOn ? "true" : "false");
+          });
+        };
+        ev.tags = next; redraw(next);                       // сразу показываем, ниже сохраняем
+        const row = tb.closest(".tagsRow");
+        row.querySelectorAll(".tagBtn").forEach((el) => { el.disabled = true; });
+        try {
+          await adminCall_({ action: "setEventTags", row: ev.row, expect: { iso: ev.iso, start: ev.start, title: ev.title }, tags: next });
+          boardTags.t = 0; refreshBoardTags_();
+        } catch(err) {
+          ev.tags = prev; redraw(prev);
+          if (!err.cancelled) { alert(err && err.message ? err.message : String(err)); }
+        } finally {
+          row.querySelectorAll(".tagBtn").forEach((el) => { el.disabled = false; });
+        }
+        return;
+      }
       const b = e.target.closest && e.target.closest(".evBtn");
       if (!b || !IS_ADMIN) return;
       const ev = (monthState.current || []).find((x) => String(x.row) === b.dataset.row);
@@ -2315,6 +2484,7 @@
       try {
         const data = await adminCall_({ action: "deleteEvent", row: ev.row, expect: { iso: ev.iso, start: ev.start, title: ev.title } });
         monthState.cache = {};
+        boardTags.t = 0;
         loadAllData();
         loadMonth_(true);
         if (data.warning) {
