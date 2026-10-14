@@ -868,7 +868,7 @@
     .evBtn svg{width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; pointer-events:none}
 
     /* Метки мероприятия: тех. поддержка / съёмка интервью / сопровождение */
-    :root{--tag-on:#ff5a5a}
+    :root{--tag-on:#c97878}   /* приглушённый красный: заметен, но не режет глаз */
     .tagsRow{display:flex; gap:6px; margin-top:9px}
     .tagBtn{
       appearance:none; display:inline-flex; align-items:center; justify-content:center;
@@ -877,7 +877,7 @@
       opacity:.32; cursor:pointer; transition:opacity .15s ease, background .15s ease, color .15s ease, border-color .15s ease;
     }
     .tagBtn:hover{opacity:.75}
-    .tagBtn.on{opacity:1; color:var(--tag-on); background:rgba(239,68,68,.18); border-color:rgba(239,68,68,.6)}
+    .tagBtn.on{opacity:.92; color:var(--tag-on); background:rgba(201,120,120,.12); border-color:rgba(201,120,120,.38)}
     .tagBtn:focus-visible{outline:2px solid var(--blue); outline-offset:2px}
     .tagBtn:disabled{cursor:default}
     .tagBtn svg,.tagChoice svg{width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; pointer-events:none}
@@ -892,14 +892,14 @@
       opacity:.5; transition:opacity .15s ease, background .15s ease, color .15s ease, border-color .15s ease;
     }
     .tagChoice:hover{opacity:.85}
-    .tagChoice.on{opacity:1; color:var(--tag-on); background:rgba(239,68,68,.16); border-color:rgba(239,68,68,.6)}
+    .tagChoice.on{opacity:.95; color:var(--tag-on); background:rgba(201,120,120,.12); border-color:rgba(201,120,120,.4)}
     .tagChoice:focus-visible{outline:2px solid var(--blue); outline-offset:2px}
 
     /* на табло: только включённые метки, рядом со временем */
     .weekEventTime{display:flex; align-items:center; gap:8px}
     .weekEventTime .wt{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
     .boardTags{display:inline-flex; gap:5px; flex:none}
-    .boardTags .tagBtn{width:24px; height:24px; opacity:1}
+    .boardTags .tagBtn{width:24px; height:24px; opacity:.9}
     .boardTags .tagBtn svg{width:13px; height:13px}
     body.fitUltra .boardTags .tagBtn{width:20px; height:20px}
 
@@ -2168,6 +2168,7 @@
     }
 
     // ===== Метки мероприятия =====
+    // Метки хранятся на сервере в свойствах скрипта (в таблицу не пишутся) и нужны только для сайта.
     const TAGS = [
       { key: "tech",   label: "Тех. поддержка",           svg: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>' },
       { key: "shoot",  label: "Съёмка интервью",          svg: '<path d="m16 13 5.2 3.5a.5.5 0 0 0 .8-.4V7.9a.5.5 0 0 0-.8-.4L16 11"/><rect x="2" y="6" width="14" height="12" rx="2"/>' },
@@ -2213,6 +2214,42 @@
         // метки — украшение, табло без них работает; повтор будет при следующем обновлении
       } finally {
         boardTags.busy = false;
+      }
+    }
+
+    function drawTagRow_(rowEl, tags){
+      if (!rowEl) return;
+      rowEl.querySelectorAll(".tagBtn").forEach((el) => {
+        const isOn = tags.includes(el.dataset.tag);
+        el.classList.toggle("on", isOn);
+        el.setAttribute("aria-pressed", isOn ? "true" : "false");
+      });
+    }
+
+    // Очередь сохранения меток: по одному запросу на мероприятие, всегда с последним состоянием
+    function queueTagSave_(ev, rowEl){
+      ev._tagRowEl = rowEl;
+      clearTimeout(ev._tagTimer);
+      ev._tagTimer = setTimeout(() => flushTagSave_(ev), 450);
+    }
+
+    async function flushTagSave_(ev){
+      if (ev._tagBusy) { ev._tagAgain = true; return; }
+      ev._tagBusy = true;
+      const sent = (ev.tags || []).slice();
+      try {
+        await adminCall_({ action: "setEventTags", event: { iso: ev.iso, start: ev.start, title: ev.title }, tags: sent });
+        ev._tagsSaved = sent;
+        boardTags.t = 0; refreshBoardTags_();
+      } catch(err) {
+        // не сохранилось: возвращаем иконки к последнему сохранённому состоянию
+        ev.tags = (ev._tagsSaved || []).slice();
+        drawTagRow_(ev._tagRowEl, ev.tags);
+        if (!err.cancelled) alert("Метки не сохранились: " + (err && err.message ? err.message : String(err)));
+        ev._tagAgain = false;
+      } finally {
+        ev._tagBusy = false;
+        if (ev._tagAgain) { ev._tagAgain = false; flushTagSave_(ev); }
       }
     }
 
@@ -2286,6 +2323,7 @@
         const data = await apiPost_({ action: "getEventsMonth", month: key });
         if (mySeq !== monthState.seq) return; // пользователь уже листает другой месяц
         if (!data.ok) throw new Error(data.error || "Ошибка на сервере");
+        (data.events || []).forEach((e) => { e._tagsSaved = (e.tags || []).slice(); });
         monthState.cache[key] = { t: Date.now(), events: data.events || [] };
         renderMonth_(data.events || []);
       } catch(err) {
@@ -2443,31 +2481,13 @@
         if (!IS_ADMIN || tb.disabled) return;
         const ev = (monthState.current || []).find((x) => String(x.row) === tb.dataset.row);
         if (!ev) return;
-        const prev = ev.tags || [];
-        const set = new Set(prev);
+        const set = new Set(ev.tags || []);
         if (set.has(tb.dataset.tag)) set.delete(tb.dataset.tag); else set.add(tb.dataset.tag);
-        const next = TAGS.map((t) => t.key).filter((k) => set.has(k));
-        const redraw = (tags) => {
-          const row = tb.closest(".tagsRow");
-          if (!row) return;
-          row.querySelectorAll(".tagBtn").forEach((el) => {
-            const isOn = tags.includes(el.dataset.tag);
-            el.classList.toggle("on", isOn);
-            el.setAttribute("aria-pressed", isOn ? "true" : "false");
-          });
-        };
-        ev.tags = next; redraw(next);                       // сразу показываем, ниже сохраняем
+        ev.tags = TAGS.map((t) => t.key).filter((k) => set.has(k));
+        // иконка меняется сразу, на сервер уходит с небольшой задержкой (быстрые клики сливаются в один запрос)
         const row = tb.closest(".tagsRow");
-        row.querySelectorAll(".tagBtn").forEach((el) => { el.disabled = true; });
-        try {
-          await adminCall_({ action: "setEventTags", row: ev.row, expect: { iso: ev.iso, start: ev.start, title: ev.title }, tags: next });
-          boardTags.t = 0; refreshBoardTags_();
-        } catch(err) {
-          ev.tags = prev; redraw(prev);
-          if (!err.cancelled) { alert(err && err.message ? err.message : String(err)); }
-        } finally {
-          row.querySelectorAll(".tagBtn").forEach((el) => { el.disabled = false; });
-        }
+        drawTagRow_(row, ev.tags);
+        queueTagSave_(ev, row);
         return;
       }
       const b = e.target.closest && e.target.closest(".evBtn");
