@@ -909,6 +909,22 @@
     body.eventsView:not(.tv) .weekEventMeta,
     body.eventsView:not(.tv) .weekEventComment{display:block; -webkit-line-clamp:unset; overflow:visible}
 
+    /* Пересечение по времени: маленький жёлтый треугольник с «!» рядом со временем */
+    .ovl{
+      position:relative; display:inline-flex; align-items:center; vertical-align:-3px;
+      margin-left:8px; color:#e0b24a; cursor:help; border-radius:6px;
+    }
+    .ovl svg{width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+    .ovl:focus-visible{outline:2px solid var(--blue); outline-offset:2px}
+    .ovl::after{
+      content:attr(data-tip); position:absolute; left:0; top:calc(100% + 6px); z-index:5;
+      width:max-content; max-width:min(300px,70vw); white-space:normal;
+      padding:7px 10px; border-radius:9px; font-size:12px; font-weight:600; line-height:1.35; text-align:left;
+      color:#fff; background:#141f33; border:1px solid rgba(224,178,74,.45); box-shadow:0 8px 24px rgba(0,0,0,.4);
+      opacity:0; pointer-events:none; transition:opacity .12s ease;
+    }
+    .ovl:hover::after,.ovl:focus::after{opacity:1}
+
     .eventForm{display:flex; flex-direction:column; min-height:0}
     .formGrid{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px}
     .formGrid .wide{grid-column:1 / -1}
@@ -2017,6 +2033,7 @@
           eventsData = data.events;
           if (currentView === "events") renderEvents(eventsData);
           refreshBoardTags_();
+          warmMonths_();
         }
 
         if (data && data.duty) {
@@ -2157,6 +2174,118 @@
     const monthTitle = document.getElementById("monthTitle");
     const monthState = { y: 0, m: 0, cache: {}, seq: 0 };
 
+    // ----- Данные месяца: из памяти мгновенно, обновление в фоне -----
+    // Открытие списка не должно ждать Apps Script: показываем то, что уже есть (в памяти или с прошлого визита),
+    // а свежие данные подгружаем в фоне и перерисовываем только если что-то изменилось.
+    const MONTH_STORE_KEY = "ipamMonthCache";
+    const MONTH_STORE_MAX_AGE = 3 * 24 * 3600 * 1000;
+    const MONTH_FRESH_MS = 15000;          // моложе — не перезапрашиваем при открытии
+    const monthInflight = {};
+    let monthStoreLoaded_ = false;
+    let tagPending_ = 0;                   // сколько мероприятий ждут сохранения меток (в это время ответ сервера не применяем)
+    const strip_ = (k, v) => (k && k[0] === "_") ? undefined : v;   // служебные поля (с «_») не сохраняем и не сравниваем
+
+    function prepEvents_(events){ events.forEach((e) => { e._tagsSaved = (e.tags || []).slice(); }); return events; }
+
+    function monthStoreLoad_(){
+      if (monthStoreLoaded_) return;
+      monthStoreLoaded_ = true;
+      try {
+        const raw = JSON.parse(localStorage.getItem(MONTH_STORE_KEY) || "{}");
+        Object.keys(raw).forEach((k) => {
+          const c = raw[k];
+          if (c && Array.isArray(c.events) && Date.now() - c.t < MONTH_STORE_MAX_AGE && !monthState.cache[k]) {
+            monthState.cache[k] = { t: c.t, events: prepEvents_(c.events) };
+          }
+        });
+      } catch(e) {}
+    }
+
+    function monthStoreSave_(){
+      try {
+        const keys = Object.keys(monthState.cache).sort().reverse().slice(0, 6);   // последние месяцы
+        const out = {};
+        keys.forEach((k) => { out[k] = monthState.cache[k]; });
+        localStorage.setItem(MONTH_STORE_KEY, JSON.stringify(out, strip_));
+      } catch(e) {}
+    }
+
+    function fetchMonth_(key){
+      if (monthInflight[key]) return monthInflight[key];
+      const p = apiPost_({ action: "getEventsMonth", month: key }).then((data) => {
+        if (!data || !data.ok) throw new Error((data && data.error) || "Ошибка на сервере");
+        const events = prepEvents_(data.events || []);
+        if (tagPending_ > 0) return { events, skip: true };   // метки ещё сохраняются: ответ может быть без них, не затираем
+        monthState.cache[key] = { t: Date.now(), events };
+        monthStoreSave_();
+        return { events };
+      }).finally(() => { delete monthInflight[key]; });
+      monthInflight[key] = p;
+      return p;
+    }
+
+    // Предзагрузка: к моменту нажатия на «Месяц» данные уже в памяти
+    const monthWarm = { t: 0, busy: false, first: true };
+    async function warmMonths_(){
+      if (monthWarm.busy || Date.now() - monthWarm.t < 120000) return;
+      monthWarm.busy = true;
+      try {
+        monthStoreLoad_();
+        const now = new Date();
+        const cur = monthKey_(now.getFullYear(), now.getMonth());
+        const nx = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        const pv = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const keys = monthWarm.first ? [cur, monthKey_(nx.getFullYear(), nx.getMonth()), monthKey_(pv.getFullYear(), pv.getMonth())] : [cur];
+        for (const key of keys) {
+          const c = monthState.cache[key];
+          if (c && Date.now() - c.t < 100000) continue;
+          await fetchMonth_(key);
+        }
+        monthWarm.first = false;
+      } catch(e) {
+        // не вышло — ничего страшного, список загрузится при открытии
+      } finally {
+        monthWarm.t = Date.now();
+        monthWarm.busy = false;
+      }
+    }
+
+    // После изменения (добавили / поменяли / удалили): все месяцы считаем устаревшими, а нужный подгружаем сразу
+    function invalidateMonths_(){
+      Object.keys(monthState.cache).forEach((k) => { monthState.cache[k].t = 0; });
+      monthStoreSave_();
+    }
+
+    // ----- Пересечения по времени внутри одного дня -----
+    function toMin_(hhmm){
+      const m = String(hhmm || "").match(/^(\d{1,2}):(\d{2})/);
+      return m ? (+m[1]) * 60 + (+m[2]) : null;
+    }
+    function overlapsOf_(list){
+      // мероприятие без времени окончания считаем короткой точкой: оно пересекается, только если попадает внутрь другого
+      const iv = list.map((e) => {
+        const s0 = toMin_(e.start);
+        if (s0 === null) return null;
+        const e0 = toMin_(e.end);
+        return { s: s0, e: (e0 !== null && e0 > s0) ? e0 : s0 + 1 };
+      });
+      const out = new Map();
+      list.forEach((a, i) => {
+        if (!iv[i]) return;
+        const hit = [];
+        list.forEach((b, j) => { if (i !== j && iv[j] && iv[i].s < iv[j].e && iv[j].s < iv[i].e) hit.push(b); });
+        if (hit.length) out.set(a, hit);
+      });
+      return out;
+    }
+    const OVL_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>';
+    function ovlHtml_(hit){
+      if (!hit || !hit.length) return "";
+      const names = hit.map((b) => "«" + b.title + "» " + (b.start ? (b.end ? b.start + "–" + b.end : "с " + b.start) : "")).join("; ");
+      const tip = "Пересекается по времени: " + names;
+      return `<span class="ovl" tabindex="0" role="img" data-tip="${escapeHtml(tip)}" aria-label="${escapeHtml(tip)}">${OVL_SVG}</span>`;
+    }
+
     function pad2_(n){ return (n < 10 ? "0" : "") + n; }
     function monthKey_(y, m){ return y + "-" + pad2_(m + 1); }
     function localIso_(d){ return d.getFullYear() + "-" + pad2_(d.getMonth() + 1) + "-" + pad2_(d.getDate()); }
@@ -2201,9 +2330,9 @@
         days.forEach((d) => { const m = String(d.date || "").match(/^\d{2}\.(\d{2})\.(\d{4})$/); if (m) months.add(m[2] + "-" + m[1]); });
         const map = {};
         for (const key of months) {
-          const data = await apiPost_({ action: "getEventsMonth", month: key });
-          if (data && data.ok) (data.events || []).forEach((ev) => { if (ev.tags && ev.tags.length) map[tagKey_(ev.date, ev.start, ev.title)] = ev.tags; });
-          else return;   // сервер без поддержки меток или сбой: табло остаётся как есть
+          const res = await fetchMonth_(key);                 // тот же запрос, что и у списка месяца: заодно держит его «тёплым»
+          if (res.skip) return;
+          res.events.forEach((ev) => { if (ev.tags && ev.tags.length) map[tagKey_(ev.date, ev.start, ev.title)] = ev.tags; });
         }
         boardTags.t = Date.now();
         if (JSON.stringify(map) !== JSON.stringify(boardTags.map)) {
@@ -2229,8 +2358,10 @@
     // Очередь сохранения меток: по одному запросу на мероприятие, всегда с последним состоянием
     function queueTagSave_(ev, rowEl){
       ev._tagRowEl = rowEl;
+      if (!ev._tagQueued) { ev._tagQueued = true; tagPending_++; }
       clearTimeout(ev._tagTimer);
-      ev._tagTimer = setTimeout(() => flushTagSave_(ev), 450);
+      ev._tagTimerOn = true;
+      ev._tagTimer = setTimeout(() => { ev._tagTimerOn = false; flushTagSave_(ev); }, 450);
     }
 
     async function flushTagSave_(ev){
@@ -2250,10 +2381,11 @@
       } finally {
         ev._tagBusy = false;
         if (ev._tagAgain) { ev._tagAgain = false; flushTagSave_(ev); }
+        else if (ev._tagQueued && !ev._tagTimerOn) { ev._tagQueued = false; tagPending_ = Math.max(0, tagPending_ - 1); monthStoreSave_(); }
       }
     }
 
-    function renderMonthEvent_(ev){
+    function renderMonthEvent_(ev, hit){
       const time = ev.start ? (ev.end ? `${ev.start}–${ev.end}` : `с ${ev.start}`) : "Время не указано";
       const meta = [];
       if (ev.place) meta.push(`Место: ${escapeHtml(ev.place)}`);
@@ -2270,14 +2402,15 @@
         </div>` : "";
       return `<div class="monthEvent${actions ? " hasActions" : ""}">
         ${actions}
-        <div class="t">${escapeHtml(time)}</div>
+        <div class="t">${escapeHtml(time)}${ovlHtml_(hit)}</div>
         <div class="n">${escapeHtml(ev.title)}</div>
         ${meta.length ? `<div class="m">${meta.join("<br>")}</div>` : ""}
         ${tagsHtml}
       </div>`;
     }
 
-    function renderMonth_(events){
+    function renderMonth_(events, keepScroll){
+      const prevScroll = monthBody.scrollTop;
       monthState.current = events;
       if (!events.length) {
         monthBody.innerHTML = '<div class="monthState">В этом месяце мероприятий нет</div>';
@@ -2297,10 +2430,12 @@
         const cls = iso === todayIso ? " today" : (iso < todayIso ? " past" : "");
         html += `<section class="monthDay${cls}">
           <div class="monthDayHead"><span>${escapeHtml(label)}</span><small>${list.length} ${eventsWord_(list.length)}</small></div>
-          <div class="monthEvents">${list.map(renderMonthEvent_).join("")}</div>
+          <div class="monthEvents">${(() => { const ov = overlapsOf_(list); return list.map((ev) => renderMonthEvent_(ev, ov.get(ev))).join(""); })()}</div>
         </section>`;
       });
       monthBody.innerHTML = html;
+
+      if (keepScroll) { monthBody.scrollTop = prevScroll; return; }   // перерисовка после фонового обновления: не прыгаем
 
       // Прокручиваем к сегодняшнему дню (или ближайшему будущему)
       const target = monthBody.querySelector(".today") || monthBody.querySelector(".monthDay:not(.past)");
@@ -2309,28 +2444,68 @@
       }
     }
 
-    async function loadMonth_(force){
+    async function loadMonth_(force, keepScroll){
       const { y, m } = monthState;
       const key = monthKey_(y, m);
       monthTitle.textContent = MONTH_NAMES[m] + " " + y;
       const mySeq = ++monthState.seq;
+      monthStoreLoad_();
 
       const cached = monthState.cache[key];
-      if (cached && !force && Date.now() - cached.t < 60000) { renderMonth_(cached.events); return; }
+      if (cached) {
+        renderMonth_(cached.events, keepScroll);           // сразу показываем то, что уже есть
+        if (!force && Date.now() - cached.t < MONTH_FRESH_MS) return;
+      } else {
+        monthBody.innerHTML = '<div class="monthState">Загружаем…</div>';
+      }
 
-      monthBody.innerHTML = '<div class="monthState">Загружаем…</div>';
       try {
-        const data = await apiPost_({ action: "getEventsMonth", month: key });
-        if (mySeq !== monthState.seq) return; // пользователь уже листает другой месяц
-        if (!data.ok) throw new Error(data.error || "Ошибка на сервере");
-        (data.events || []).forEach((e) => { e._tagsSaved = (e.tags || []).slice(); });
-        monthState.cache[key] = { t: Date.now(), events: data.events || [] };
-        renderMonth_(data.events || []);
+        const res = await fetchMonth_(key);                 // свежие данные подгружаем в фоне
+        if (mySeq !== monthState.seq || res.skip) return;   // пользователь уже листает другой месяц / идёт сохранение меток
+        if (!cached || JSON.stringify(cached.events, strip_) !== JSON.stringify(res.events, strip_)) {
+          renderMonth_(res.events, !!cached);
+        }
       } catch(err) {
-        if (mySeq !== monthState.seq) return;
+        if (mySeq !== monthState.seq || cached) return;     // есть что показать — молча оставляем
         monthBody.innerHTML = '<div class="monthState error">Не удалось загрузить: ' + escapeHtml(err && err.message ? err.message : String(err)) +
           '<br><br><button class="formBtn" id="monthRetry" type="button">Повторить</button></div>';
         document.getElementById("monthRetry").addEventListener("click", () => loadMonth_(true));
+      }
+    }
+
+    // Изменение мероприятия показываем в списке сразу, не дожидаясь перечитывания таблицы; настоящие данные подтянутся в фоне
+    function applyLocalChange_(old, nv){   // nv === null — удаление
+      const key0 = String(old.iso).slice(0, 7);
+      const c = monthState.cache[key0];
+      let movedTo = null;
+      if (c) {
+        const i = c.events.indexOf(old);
+        if (i >= 0) {
+          if (!nv) c.events.splice(i, 1);
+          else {
+            const [yy, mm, dd] = nv.date.split("-");
+            Object.assign(old, { iso: nv.date, date: `${dd}.${mm}.${yy}`, start: nv.start, end: nv.end, title: nv.title,
+              place: nv.place, person: nv.person, comment: nv.comment, tags: (nv.tags || []).slice() });
+            old._tagsSaved = (nv.tags || []).slice();
+            if (nv.date.slice(0, 7) !== key0 || nv.show === false) { c.events.splice(i, 1); movedTo = nv.date.slice(0, 7); }
+            else c.events.sort((a, b) => a.iso !== b.iso ? (a.iso < b.iso ? -1 : 1) : (toMin_(a.start) || 0) - (toMin_(b.start) || 0));
+          }
+        }
+      }
+      refreshAfterChange_(movedTo);
+    }
+
+    function refreshAfterChange_(otherKey){
+      invalidateMonths_();
+      boardTags.t = 0;
+      if (otherKey) fetchMonth_(otherKey).catch(() => {});
+      if (!monthModal.hidden) {
+        const k = monthKey_(monthState.y, monthState.m);
+        if (monthState.cache[k]) renderMonth_(monthState.cache[k].events, true);
+        loadMonth_(true, true);
+      } else {
+        const now = new Date();
+        fetchMonth_(monthKey_(now.getFullYear(), now.getMonth())).catch(() => {});
       }
     }
 
@@ -2392,7 +2567,7 @@
       let backToMonth = false;
 
       function openForm_(ev, fromMonth){
-        editing = ev ? { row: ev.row, expect: { iso: ev.iso, start: ev.start, title: ev.title } } : null;
+        editing = ev ? { row: ev.row, ref: ev, expect: { iso: ev.iso, start: ev.start, title: ev.title } } : null;
         backToMonth = !!fromMonth;
         form.reset();
         f.title.value = ev ? ev.title : "";
@@ -2450,15 +2625,15 @@
         submit.disabled = true;
         submit.textContent = editing ? "Сохраняю…" : "Добавляю…";
         const wasEditing = !!editing;
+        const editRef = editing && editing.ref;
         try {
           const data = await adminCall_(wasEditing
             ? { action: "updateEvent", row: editing.row, expect: editing.expect, event: ev }
             : { action: "addEvent", event: ev });
           hideModal_(modal);
-          monthState.cache = {};
-          boardTags.t = 0;
+          if (wasEditing && editRef) applyLocalChange_(editRef, ev);
+          else refreshAfterChange_(ev.show === false ? null : ev.date.slice(0, 7));
           loadAllData();
-          if (!monthModal.hidden) loadMonth_(true);
           if (data.warning) {
             alert("Мероприятие записано в таблицу, но табло обновилось не полностью:\n" + data.warning +
               "\n\nОбновите вручную: в таблице меню «Табло студий» → «Обновить API мероприятий из ввода».");
@@ -2503,10 +2678,8 @@
       b.disabled = true;
       try {
         const data = await adminCall_({ action: "deleteEvent", row: ev.row, expect: { iso: ev.iso, start: ev.start, title: ev.title } });
-        monthState.cache = {};
-        boardTags.t = 0;
+        applyLocalChange_(ev, null);
         loadAllData();
-        loadMonth_(true);
         if (data.warning) {
           alert("Мероприятие удалено из таблицы, но табло обновилось не полностью:\n" + data.warning +
             "\n\nОбновите вручную: в таблице меню «Табло студий» → «Обновить API мероприятий из ввода».");
